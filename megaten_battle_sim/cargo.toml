@@ -1,0 +1,10 @@
+[package]
+name = "megaten_battle_sim"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bon = "2.3.0"
+env_logger = "0.11.5"
+lazy_static = "1.5.0"
+log = "0.4.22"

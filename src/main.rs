@@ -1,5 +1,5 @@
 mod battle;
-use battle::{Battle, BattleState};
+// use battle::{Battle, BattleState};
 
 use leptos::*;
 fn main() {
@@ -22,7 +22,7 @@ enum MenuState {
 struct GameState {
     current_game_mode: GameMode,
     exploration_state: ExplorationState,
-    battle_state: BattleState,
+    // battle_state: BattleState,
 }
 #[derive(Debug, Clone)]
 enum GameMode {
@@ -69,13 +69,14 @@ fn Game(state: GameState) -> impl IntoView {
             }
         }
         GameMode::Battle => {
-            view! {
-                <Battle
-                    read_state=read_battle
-                    write_state=write_battle
-                    on_battle_end=move |_| { write_mode(GameMode::Exploration) }
-                />
-            }
+            todo!()
+            // view! {
+            //     <Battle
+            //         read_state=read_battle
+            //         write_state=write_battle
+            //         on_battle_end=move |_| { write_mode(GameMode::Exploration) }
+            //     />
+            // }
         }
     };
 }
