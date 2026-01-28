@@ -1,6 +1,6 @@
-import type { CompendiumCharacter } from './character/character';
-import { DebugCompendium } from './debug';
-import type { CompendiumSkill } from './skill';
+import type { CompendiumCharacter } from '$lib/game/compendium/character';
+import { DebugCompendium } from '$lib/game/compendium/debug';
+import type { CompendiumSkill } from '$lib/game/compendium/skill';
 
 //A compendium item is a *template* which is then instanced in the actual game
 export interface CompendiumItem {

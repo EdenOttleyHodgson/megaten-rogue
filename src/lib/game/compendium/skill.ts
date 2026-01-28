@@ -4,8 +4,8 @@ import type {
 	CompendiumTargeting,
 	ResistType,
 	SMTElement
-} from '$lib/gameTypes';
-import type { CompendiumItem } from '.';
+} from '$lib/game/gameTypes';
+import type { CompendiumItem } from '$lib/game/compendium';
 
 export type CompendiumSkill =
 	| { kind: 'Attack'; skill: CompendiumAttackSkill }

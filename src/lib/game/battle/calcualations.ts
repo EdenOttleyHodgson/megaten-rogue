@@ -1,5 +1,5 @@
-import { meanOfArray, randomOutcome } from '$lib/calculationUtils';
-import type { StatArray } from '$lib/gameTypes';
+import { meanOfArray, randomOutcome } from '$lib/game/calculationUtils';
+import type { StatArray } from '$lib/game/gameTypes';
 import { type Side } from '.';
 import type { Party } from './party';
 

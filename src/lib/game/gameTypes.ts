@@ -95,7 +95,6 @@ export type DemonRace = 'Foul';
 //
 //
 
-export interface Skill {}
 export interface BasicAttackData {
 	power: number;
 	hits: number;

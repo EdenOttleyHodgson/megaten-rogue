@@ -5,8 +5,8 @@ import type {
 	StatArray,
 	DemonRace,
 	BasicAttackData
-} from '$lib/gameTypes';
-import type { CompendiumItem } from '..';
+} from '$lib/game/gameTypes';
+import type { CompendiumItem } from '$lib/game/compendium';
 
 export type CompendiumCharacter = { kind: 'Demon'; data: CompendiumDemon };
 

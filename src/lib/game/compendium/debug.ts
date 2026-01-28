@@ -1,6 +1,6 @@
-import { Compendium } from '.';
-import type { CompendiumDemon, CompendiumCharacter } from './character/character';
-import type { CompendiumSkill } from './skill';
+import { Compendium } from '$lib/game/compendium';
+import type { CompendiumDemon, CompendiumCharacter } from '$lib/game/compendium/character';
+import type { CompendiumSkill } from '$lib/game/compendium/skill';
 
 const DEBUG_DEMON: CompendiumCharacter = {
 	kind: 'Demon',

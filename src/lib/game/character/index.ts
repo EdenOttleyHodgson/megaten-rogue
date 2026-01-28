@@ -1,5 +1,5 @@
-import { getCompendium } from '$lib/compendium';
-import type { AffinityArray, AilmentType, ResistArray, StatArray } from '$lib/gameTypes';
+import { getCompendium } from '$lib/game/compendium';
+import type { AffinityArray, AilmentType, ResistArray, StatArray } from '$lib/game/gameTypes';
 
 //This is an instance of a compendium character
 export class Character {

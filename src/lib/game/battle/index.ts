@@ -1,4 +1,4 @@
-import type { CompendiumSkill } from '$lib/compendium/skill';
+import type { CompendiumSkill } from '$lib/game/compendium/skill';
 import { actsFirst } from './calcualations';
 import type { Combatant } from './combatant';
 import type { Party } from './party';

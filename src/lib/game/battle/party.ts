@@ -1,4 +1,4 @@
-import type { StatArray } from '$lib/gameTypes';
+import type { StatArray } from '$lib/game/gameTypes';
 import type { Combatant } from './combatant';
 
 export class Party {

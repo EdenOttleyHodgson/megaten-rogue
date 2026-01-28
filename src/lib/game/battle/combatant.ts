@@ -1,5 +1,5 @@
-import type { Character } from '$lib/character/character';
-import { NEUTRAL_BUFF_ARRAY, type BuffArray } from '$lib/gameTypes';
+import type { Character } from '$lib/game/character';
+import { NEUTRAL_BUFF_ARRAY, type BuffArray } from '$lib/game/gameTypes';
 
 export class Combatant {
 	character: Character;
