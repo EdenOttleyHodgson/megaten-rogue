@@ -6,6 +6,7 @@ const DEBUG_DEMON: CompendiumCharacter = {
 	kind: 'Demon',
 	data: {
 		id: 'debug.demons.debugDemon',
+		sprite: null,
 		displayName: 'John Demon',
 		race: 'Foul',
 		baseLevel: 10,
@@ -113,4 +114,11 @@ const DEBUG_SKILLS = [DEBUG_FLAMES, DEBUG_HEAL, DEBUG_AILMENT];
 
 const DEBUG_CHARACTERS = [DEBUG_DEMON];
 
-export const DebugCompendium: Compendium = new Compendium(DEBUG_CHARACTERS, DEBUG_SKILLS);
+export function debugCompendium(): Compendium {
+	if (!DebugCompendium) {
+		DebugCompendium = new Compendium(DEBUG_CHARACTERS, DEBUG_SKILLS);
+	}
+	return DebugCompendium;
+}
+
+export let DebugCompendium: Compendium | null = null;

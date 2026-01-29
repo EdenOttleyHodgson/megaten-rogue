@@ -1,7 +1,7 @@
 import { meanOfArray, randomOutcome } from '$lib/game/calculationUtils';
 import type { StatArray } from '$lib/game/gameTypes';
-import { type Side } from '.';
-import type { Party } from './party';
+import { type Side } from '$lib/game/battle/index.svelte';
+import type { Party } from '$lib/game/battle/party.svelte';
 
 //Player acts first chance = 50 + (Mean(agility of all player combatants) - Mean(agility of all enemy combatants)) %
 export function actsFirst(playerParty: Party, enemyParty: Party): Side {

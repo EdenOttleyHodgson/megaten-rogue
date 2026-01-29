@@ -1,10 +1,11 @@
 import type { StatArray } from '$lib/game/gameTypes';
-import type { Combatant } from './combatant';
+import type { Combatant } from './combatant.svelte';
 
 export class Party {
-	private combatants: Combatant[];
+	combatants: Combatant[];
+	maxSize: number = 4;
 	constructor(combatants: Combatant[]) {
-		this.combatants = combatants;
+		this.combatants = $state(combatants);
 	}
 
 	public stats(): StatArray[] {

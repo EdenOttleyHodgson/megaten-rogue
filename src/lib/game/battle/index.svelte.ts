@@ -1,20 +1,20 @@
 import type { CompendiumSkill } from '$lib/game/compendium/skill';
 import { actsFirst } from './calcualations';
-import type { Combatant } from './combatant';
-import type { Party } from './party';
+import type { Combatant } from './combatant.svelte';
+import type { Party } from './party.svelte';
 
 export class BattleState {
 	playerParty: Party;
 	enemyParty: Party;
 	currentSide: Side;
-	currentPressTurns: number;
+	currentPressTurns: number = $state(0);
 	//Turn order is always first slot, SMTV style
 	currentCombatantTurn: number = 0;
 	constructor(playerParty: Party, enemyParty: Party) {
-		this.playerParty = playerParty;
-		this.enemyParty = enemyParty;
+		this.playerParty = $state(playerParty);
+		this.enemyParty = $state(enemyParty);
 		//determine which side goes first;
-		this.currentSide = actsFirst(playerParty, enemyParty);
+		this.currentSide = $state(actsFirst(playerParty, enemyParty));
 
 		//add press turns accordingly
 		if (this.currentSide == 'Player') {
@@ -22,6 +22,10 @@ export class BattleState {
 		} else {
 			this.currentPressTurns = enemyParty.size();
 		}
+	}
+
+	damageTest() {
+		this.playerParty.combatants[0].character.damage(1);
 	}
 
 	//Checks if skill can be used

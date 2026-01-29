@@ -11,6 +11,7 @@ import type { CompendiumItem } from '$lib/game/compendium';
 export type CompendiumCharacter = { kind: 'Demon'; data: CompendiumDemon };
 
 export interface BaseCompendiumCharacter extends CompendiumItem {
+	sprite: string | null;
 	baseLevel: number;
 	baseStats: StatArray;
 	baseResists: ResistArray;

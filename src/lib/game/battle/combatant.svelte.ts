@@ -1,4 +1,4 @@
-import type { Character } from '$lib/game/character';
+import type { Character } from '$lib/game/character/index.svelte';
 import { NEUTRAL_BUFF_ARRAY, type BuffArray } from '$lib/game/gameTypes';
 
 export class Combatant {
@@ -6,8 +6,8 @@ export class Combatant {
 	buffLevels: BuffArray;
 	smirking: boolean;
 	constructor(character: Character) {
-		this.character = character;
-		this.buffLevels = NEUTRAL_BUFF_ARRAY;
-		this.smirking = false;
+		this.character = $state(character);
+		this.buffLevels = $state(NEUTRAL_BUFF_ARRAY);
+		this.smirking = $state(false);
 	}
 }

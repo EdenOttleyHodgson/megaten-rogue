@@ -90,6 +90,8 @@ export type LevelSkillMap = { level: number; skill_id: string }[];
 
 export type DemonRace = 'Foul';
 
+export type CharacterType = 'Demon' | 'Summoner';
+
 //this'll need to be moved
 //
 //
