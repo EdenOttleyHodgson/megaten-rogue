@@ -26,7 +26,7 @@ export interface CompendiumAttackSkill extends BaseCompendiumSkill {
 	power: number;
 	hits: number;
 	accuracy: number;
-	critMod: number;
+	critRate: number;
 }
 
 export interface CompendiumRecoverySkill extends BaseCompendiumSkill {

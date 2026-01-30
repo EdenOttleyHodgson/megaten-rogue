@@ -46,6 +46,7 @@ export class Character {
 		this.dead = $state(false);
 		this.characterClass = $state(classFromCompendiumChar(this.level, compendiumChar));
 	}
+
 	//Damage a character
 	damage(amount: number) {
 		this.currentHp = Math.max(0, this.currentHp - amount);

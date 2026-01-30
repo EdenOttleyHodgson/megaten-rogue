@@ -15,7 +15,8 @@ const DEBUG_DEMON: CompendiumCharacter = {
 			mp: 100,
 			strength: 10,
 			agility: 10,
-			dexterity: 10,
+			intelligence: 10,
+			vitality: 10,
 			magic: 10,
 			luck: 10
 		},
@@ -81,7 +82,7 @@ const DEBUG_FLAMES: CompendiumSkill = {
 		power: 100,
 		hits: 1,
 		accuracy: 80,
-		critMod: 0
+		critRate: 10
 	}
 };
 const DEBUG_HEAL: CompendiumSkill = {

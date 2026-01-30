@@ -16,3 +16,7 @@ export function sumArray(arr: number[]): number {
 export function meanOfArray(arr: number[]): number {
 	return sumArray(arr) / arr.length;
 }
+
+export function randomArbitrary(min: number, max: number): number {
+	return Math.random() * (max - min) + min;
+}
