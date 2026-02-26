@@ -14,7 +14,11 @@
 		<div class="w-1/5">
 			<Party party={battle.playerParty}></Party>
 		</div>
-		<div>log</div>
+		<div class="overflow-scroll">
+			{#each battle.battleLogTexts as text}
+				<p>{text}</p>
+			{/each}
+		</div>
 		<div class="w-1/5">
 			<Party party={battle.enemyParty}></Party>
 		</div>
@@ -24,11 +28,8 @@
 		{#if debugFlames}
 			<button
 				onclick={() =>
-					(test = [
-						...test,
-						...battle.resolveSkill(battle.playerParty.combatants[0], debugFlames, [
-							battle.enemyParty.combatants[0]
-						])
+					battle.resolveSkill(battle.playerParty.combatants[0], debugFlames, [
+						battle.enemyParty.combatants[0]
 					])}>Debug Flames Test</button
 			>
 
@@ -45,6 +46,7 @@
 			<!-- content here -->
 		{/if}
 		<button onclick={() => console.log($state.snapshot(test))}>Log Test</button>
+		<div></div>
 		<!-- bottom -->
 	</div>
 </div>

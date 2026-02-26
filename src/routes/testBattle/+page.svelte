@@ -6,8 +6,8 @@
 	import Battle from '$lib/ui/components/battle/Battle.svelte';
 	let friendlyJohnDemon = $state(new Character('debug.demons.debugDemon'));
 	let enemyJohnDemon = $state(new Character('debug.demons.debugDemon'));
-	let playerParty = $state(new Party([new Combatant(friendlyJohnDemon)]));
-	let enemyParty = $state(new Party([new Combatant(enemyJohnDemon)]));
+	let playerParty = $state(new Party([new Combatant(friendlyJohnDemon, 'Player')]));
+	let enemyParty = $state(new Party([new Combatant(enemyJohnDemon, 'Enemy')]));
 	let battle = $state(new BattleState(playerParty, enemyParty));
 </script>
 

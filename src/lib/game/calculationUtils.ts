@@ -20,3 +20,7 @@ export function meanOfArray(arr: number[]): number {
 export function randomArbitrary(min: number, max: number): number {
 	return Math.random() * (max - min) + min;
 }
+
+export function withinBounds(num: number, lower: number, upper: number): number {
+	return Math.max(Math.min(num, upper), lower);
+}

@@ -6,6 +6,8 @@ import type {
 	ResistArray,
 	StatArray
 } from '$lib/game/gameTypes';
+import { SvelteSet } from 'svelte/reactivity';
+import { withinBounds } from '../calculationUtils';
 import type { CompendiumCharacter } from '../compendium/character';
 import type { CompendiumSkill } from '../compendium/skill';
 import { demonClassFromCompendium, type DemonClass } from './demon.svelte';
@@ -21,7 +23,7 @@ export class Character {
 	affinities: AffinityArray;
 	currentHp: number;
 	currentMp: number;
-	currentAilments: AilmentType[];
+	currentAilments: SvelteSet<AilmentType>;
 	dead: boolean;
 	characterClass: CharacterClass;
 	//There needs to be like. the other demon/atma avatar/summoner stuff
@@ -42,7 +44,7 @@ export class Character {
 		this.affinities = $state(compendiumChar.data.baseAffinities);
 		this.currentHp = $state(this.stats.hp);
 		this.currentMp = $state(this.stats.mp);
-		this.currentAilments = $state([]);
+		this.currentAilments = new SvelteSet();
 		this.dead = $state(false);
 		this.characterClass = $state(classFromCompendiumChar(this.level, compendiumChar));
 	}
@@ -53,6 +55,27 @@ export class Character {
 		if (this.currentHp == 0) {
 			this.dead = true;
 		}
+	}
+	heal(amount: number) {
+		this.currentHp = Math.min(this.currentHp + amount, this.stats.hp);
+	}
+	revive(percent: number) {
+		if (this.dead) {
+			this.currentHp = Math.floor((percent / 100) * this.stats.hp);
+			this.dead = false;
+		} else {
+			console.error('Tried to revive living character!');
+		}
+	}
+	addAilment(ailment: AilmentType) {
+		this.currentAilments.add(ailment);
+	}
+
+	removeAilment(ailment: AilmentType) {
+		this.currentAilments.delete(ailment);
+	}
+	modifyMp(amount: number) {
+		this.currentMp = withinBounds(this.currentMp + amount, 0, this.stats.mp);
 	}
 }
 

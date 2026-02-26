@@ -23,3 +23,5 @@ export interface CompendiumDemon extends BaseCompendiumCharacter {
 	basicAttack: BasicAttackData;
 	skills: LevelSkillMap;
 }
+
+

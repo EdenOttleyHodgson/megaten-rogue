@@ -24,6 +24,8 @@ export class BattleState {
 	enemyParty: Party;
 	currentSide: Side;
 	currentPressTurns: number = $state(0);
+	battleLog: ActionResult[] = $state([]);
+	battleLogTexts = $derived(this.battleLog.map((x) => this.actionResultToMessage(x)));
 	//Turn order is always first slot, SMTV style
 	currentCombatantTurn: number = 0;
 	constructor(playerParty: Party, enemyParty: Party) {
@@ -40,6 +42,14 @@ export class BattleState {
 		}
 	}
 
+	modifyTurns(amount: number) {
+		this.currentPressTurns += amount;
+		if (this.currentPressTurns <= 0) {
+			this.sideSwitch();
+		}
+	}
+	sideSwitch() {}
+
 	damageTest() {
 		this.playerParty.combatants[0].character.damage(1);
 	}
@@ -54,7 +64,37 @@ export class BattleState {
 		return [];
 	}
 
-	resolveSkill(user: Combatant, skill: CompendiumSkill, targets: Combatant[]): ActionResult[] {
+	resolveSkill(user: Combatant, skill: CompendiumSkill, targets: Combatant[]) {
+		let results;
+
+		try {
+			results = [
+				{ kind: 'SkillUsed', args: { target: user, arg: skill.skill.displayName } },
+				...this.calculateSkillResult(user, skill, targets)
+			];
+		} catch (err) {
+			console.error(err);
+			return;
+		}
+		let endsTurn = false;
+		results.forEach((result) => {
+			if (result.kind == 'EndsTurn') {
+				endsTurn = true;
+			} else {
+				this.applyActionResult(result);
+			}
+		});
+		if (endsTurn) {
+		}
+
+		this.battleLog = [...this.battleLog, ...results.filter((x) => x)];
+	}
+
+	private calculateSkillResult(
+		user: Combatant,
+		skill: CompendiumSkill,
+		targets: Combatant[]
+	): ActionResult[] {
 		//TODO
 		const results = new Array<ActionResult>();
 		// Dispatch based on skill type
@@ -125,7 +165,6 @@ export class BattleState {
 		const affinityEffects = getAffinityEffects(attacker.character.affinities, skill.element);
 		const affinityDamageMult = affinityEffectMult(affinityEffects);
 
-		console.debug('hitTargetsWithResists', hitTargetsWithResists);
 		let toProcess = hitTargetsWithResists;
 		if (!pierces) {
 			//Check reflections
@@ -134,7 +173,6 @@ export class BattleState {
 				([_, resistType]) =>
 					resistType == 'Reflect' || resistType == 'Drain' || resistType == 'Null'
 			);
-			console.debug('fails', fails);
 
 			fails.forEach(([target, res]) => {
 				let damageRoll = calculateDamage(
@@ -158,8 +196,8 @@ export class BattleState {
 						results.push({
 							kind: 'DamageReflected',
 							args: {
-								reflector: [target.side, target],
-								reciever: [attacker.side, attacker],
+								reflector: target,
+								reciever: attacker,
 								amount: damageRoll
 							}
 						});
@@ -174,11 +212,8 @@ export class BattleState {
 						break;
 				}
 			});
-			console.debug('successes', successes);
 			toProcess = successes;
 		}
-		console.debug('toProcess:', toProcess);
-		console.debug('Results', results);
 		results.push(
 			...toProcess.flatMap(([target, resistType]) => {
 				const results = new Array<ActionResult>();
@@ -281,10 +316,76 @@ export class BattleState {
 	}
 	//Take the result of an action and use it to modify the state of the battle.
 	//All actions return an action result. This allows for skill resolution to abort if something errors.
-	applyActionResult(result: ActionResult) {}
+	applyActionResult(result: ActionResult) {
+		switch (result.kind) {
+			case 'SkillUsed':
+			case 'WeaknessHit':
+			case 'Critical':
+			case 'SkillMissed':
+			case 'DamageNulled':
+				break;
+			case 'DamageDealt':
+				result.args.target.character.damage(result.args.amount);
+				break;
+			case 'DamageReflected':
+				result.args.reciever.character.damage(result.args.amount);
+				break;
+			case 'DamageDrained':
+			case 'HealingDone':
+				result.args.target.character.heal(result.args.arg);
+				break;
+			case 'Revived':
+				result.args.target.character.revive(result.args.arg);
+				break;
+			case 'AilmentApplied':
+				result.args.target.character.addAilment(result.args.arg);
+				break;
+			case 'AilmentCleansed':
+				result.args.target.character.removeAilment(result.args.arg);
+				break;
+			case 'MPSpent':
+				result.args.target.character.modifyMp(-1 * result.args.arg);
+				break;
+			case 'EndsTurn':
+				//handle later
+				break;
+			case 'PressTurnMod':
+				this.modifyTurns(result.amount);
+				break;
+			case 'BuffModified':
+				result.args.target.modifyBuff(result.args.arg.buff, result.args.arg.amount);
+				break;
+		}
+	}
 
-	private actionResultToMessage(result: ActionResult): string {
-		return '';
+	private actionResultToMessage(result: ActionResult): string | null {
+		switch (result.kind) {
+			case 'SkillUsed':
+				return `${result.args.target.character.displayName} used ${result.args.arg}!`;
+			case 'WeaknessHit':
+				return `${result.args.character.displayName} weakness hit!`;
+			case 'Critical':
+				return `${result.args.character.displayName} was critically hit!`;
+			case 'SkillMissed':
+				return `${result.args.character.displayName} missed!`;
+			case 'DamageNulled':
+				return `${result.args.character.displayName} nulled damage!`;
+			case 'DamageDealt':
+				return `${result.args.target.character.displayName} took ${result.args.amount} damage!`;
+			case 'DamageReflected':
+				return `${result.args.reflector.character.displayName} reflected ${result.args.amount} damage to ${result.args.reciever.character.displayName}`;
+			case 'DamageDrained':
+				return `${result.args.target.character.displayName} drained ${result.args.arg} damage!`;
+			case 'HealingDone':
+				return `${result.args.target.character.displayName} healed for ${result.args.arg} damage!`;
+			case 'Revived':
+				return `${result.args.target.character.displayName} was revived!`;
+			case 'AilmentApplied':
+				return `${result.args.target.character.displayName} was ${result.args.arg}`;
+			case 'AilmentCleansed':
+				return '';
+		}
+		return null;
 	}
 }
 
@@ -318,11 +419,9 @@ export type ActionResult =
 	| { kind: 'Critical'; args: Combatant }
 	| {
 			kind: 'DamageReflected';
-			args: { reflector: [Side, Combatant]; reciever: [Side, Combatant]; amount: number };
+			args: { reflector: Combatant; reciever: Combatant; amount: number };
 	  }
 	| { kind: 'DamageDrained'; args: TargetResult<number> }
 	| { kind: 'DamageNulled'; args: Combatant };
 
 export type Side = 'Player' | 'Enemy';
-
-type AttackResolveRes = 'Fail' | 'Neutral' | 'CritWeak';

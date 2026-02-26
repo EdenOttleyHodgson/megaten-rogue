@@ -10,7 +10,13 @@
 	<div>
 		<h3>{combatant.character.displayName}</h3>
 		<div>
-			<p>HP: {combatant.character.currentHp}/{combatant.character.stats.hp}</p>
+			{#if combatant.character.dead}
+				<p>DEAD</p>
+			{:else}
+				<p>HP: {combatant.character.currentHp}/{combatant.character.stats.hp}</p>
+				<!-- else content here -->
+			{/if}
+
 			<p>MP: {combatant.character.currentMp}/{combatant.character.stats.mp}</p>
 		</div>
 		<ul>
