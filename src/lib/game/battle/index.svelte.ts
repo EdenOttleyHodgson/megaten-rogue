@@ -12,7 +12,8 @@ import {
 	getAffinityEffects,
 	type AilmentType,
 	type BuffType,
-	type ResistType
+	type ResistType,
+	type SMTElement
 } from '../gameTypes';
 import { actsFirst, calculateDamage, CRIT_DAMAGE_MULT, rollCrit, rollHit } from './calcualations';
 import type { Combatant } from './combatant.svelte';
@@ -66,12 +67,13 @@ export class BattleState {
 
 	resolveSkill(user: Combatant, skill: CompendiumSkill, targets: Combatant[]) {
 		let results;
+		let skillUsed: ActionResult = {
+			kind: 'SkillUsed',
+			args: { target: user, arg: skill.skill.displayName }
+		};
 
 		try {
-			results = [
-				{ kind: 'SkillUsed', args: { target: user, arg: skill.skill.displayName } },
-				...this.calculateSkillResult(user, skill, targets)
-			];
+			results = [skillUsed, ...this.calculateSkillResult(user, skill, targets)];
 		} catch (err) {
 			console.error(err);
 			return;
@@ -104,21 +106,22 @@ export class BattleState {
 				results.push(...this.resolveAttack(skill.skill, user, targets));
 				break;
 			case 'Ailment':
-				results.push(...this.resolveAilment(skill.skill, targets));
+				results.push(...this.resolveAilment(skill.skill, user, targets));
 				break;
 			case 'Support':
-				results.push(...this.resolveSupport(skill.skill, targets));
+				results.push(...this.resolveSupport(skill.skill, user, targets));
 				break;
 			case 'Passive':
+				console.error("Can't use a passive!");
 				break;
 			case 'Recovery':
-				results.push(...this.resolveRecovery(skill.skill, targets));
+				results.push(...this.resolveRecovery(skill.skill, user, targets));
 				break;
 			case 'special':
-				results.push(...this.resolveSpecial(skill.skill, targets));
+				results.push(...this.resolveSpecial(skill.skill, user, targets));
 				break;
 		}
-		//Extra effects probably need special treatment to avoid double countering press turn mods etc;
+		//Extra effects probably need special treatment to avoid double counting press turn mods etc;
 		console.debug(results);
 		return results;
 	}
@@ -134,9 +137,14 @@ export class BattleState {
 
 		const physAttack: boolean = skill.element == 'Phys' || skill.element == 'Gun';
 
+		//TODO: Get passive mods
+		const damageMult = 1;
+		const critMult = 1;
+		const accuracyMult = 1;
+
 		const [hits, misses] = _.partition(targets, (target: Combatant) =>
 			rollHit(
-				skill.accuracy,
+				skill.accuracy * accuracyMult,
 				attacker.character.stats.agility,
 				target.character.stats.agility,
 				buffToBuffMult(attacker.buffLevels, target.buffLevels, 'Accuracy')
@@ -145,7 +153,7 @@ export class BattleState {
 		if (misses.length > 0) {
 			failPressTurnMod = 4;
 		}
-		misses.forEach((miss) => results.push({ kind: 'SkillMissed', args: miss }));
+		misses.forEach((miss) => results.push({ kind: 'SkillMissed', target: miss }));
 
 		const pierces = _.contains(attacker.pierces, skill.element);
 
@@ -166,6 +174,7 @@ export class BattleState {
 		const affinityDamageMult = affinityEffectMult(affinityEffects);
 
 		let toProcess = hitTargetsWithResists;
+
 		if (!pierces) {
 			//Check reflections
 			const [fails, successes] = _.partition(
@@ -175,15 +184,16 @@ export class BattleState {
 			);
 
 			fails.forEach(([target, res]) => {
-				let damageRoll = calculateDamage(
-					skill.power,
-					attackerOffence,
-					defenceAccessor(target),
-					affinityDamageMult,
-					1,
-					1,
-					calcBuffMult(target)
-				);
+				let damageRoll =
+					calculateDamage(
+						skill.power,
+						attackerOffence,
+						defenceAccessor(target),
+						affinityDamageMult,
+						1,
+						1,
+						calcBuffMult(target)
+					) * damageMult;
 
 				switch (res) {
 					case 'Drain':
@@ -220,16 +230,17 @@ export class BattleState {
 				let damageRoll;
 				switch (resistType) {
 					case 'Strong':
-						damageRoll = calculateDamage(
-							skill.power,
-							attackerOffence,
-							defenceAccessor(target),
-							affinityDamageMult,
-							0.5,
-							undefined,
-							attacker.concentrating,
-							buffToBuffMult(attacker.buffLevels, target.buffLevels, 'Attack')
-						);
+						damageRoll =
+							calculateDamage(
+								skill.power,
+								attackerOffence,
+								defenceAccessor(target),
+								affinityDamageMult,
+								0.5,
+								undefined,
+								attacker.concentrating,
+								buffToBuffMult(attacker.buffLevels, target.buffLevels, 'Attack')
+							) * damageMult;
 
 						results.push({
 							kind: 'DamageDealt',
@@ -237,16 +248,17 @@ export class BattleState {
 						});
 						break;
 					case 'Weak':
-						damageRoll = calculateDamage(
-							skill.power,
-							attackerOffence,
-							defenceAccessor(target),
-							affinityDamageMult,
-							1.5,
-							undefined,
-							attacker.concentrating,
-							buffToBuffMult(attacker.buffLevels, target.buffLevels, 'Attack')
-						);
+						damageRoll =
+							calculateDamage(
+								skill.power,
+								attackerOffence,
+								defenceAccessor(target),
+								affinityDamageMult,
+								1.5,
+								undefined,
+								attacker.concentrating,
+								buffToBuffMult(attacker.buffLevels, target.buffLevels, 'Attack')
+							) * damageMult;
 						critFlag = true;
 
 						results.push({ kind: 'WeaknessHit', args: target });
@@ -261,7 +273,7 @@ export class BattleState {
 							attacker.smirking ||
 							(physAttack &&
 								rollCrit(
-									skill.critRate,
+									skill.critRate * critMult,
 									attacker.character.stats.luck,
 									target.character.stats.luck
 								));
@@ -271,16 +283,17 @@ export class BattleState {
 							critMod = CRIT_DAMAGE_MULT; //Whatever crit is
 							critFlag = true;
 						}
-						damageRoll = calculateDamage(
-							skill.power,
-							attackerOffence,
-							defenceAccessor(target),
-							affinityDamageMult,
-							1,
-							critMod,
-							attacker.concentrating,
-							buffToBuffMult(attacker.buffLevels, target.buffLevels, 'Attack')
-						);
+						damageRoll =
+							calculateDamage(
+								skill.power,
+								attackerOffence,
+								defenceAccessor(target),
+								affinityDamageMult,
+								1,
+								critMod,
+								attacker.concentrating,
+								buffToBuffMult(attacker.buffLevels, target.buffLevels, 'Attack')
+							) * damageMult;
 						const resistHit = crit ? 'Crit' : 'Neutral';
 						results.push({ kind: 'DamageDealt', args: { target, resistHit, amount: damageRoll } });
 						break;
@@ -302,16 +315,108 @@ export class BattleState {
 		//
 		return results;
 	}
-	private resolveAilment(skill: CompendiumAilmentSkill, targets: Combatant[]): ActionResult[] {
+	private resolveAilment(
+		skill: CompendiumAilmentSkill,
+		user: Combatant,
+		targets: Combatant[]
+	): ActionResult[] {
+		const results = new Array<ActionResult>();
+		let weakFlag = false;
+		let failPressTurnMod = 0;
+		//Check resists
+		const withResists: [Combatant, ResistType][] = targets.map((x) => [
+			x,
+			x.getResist(skill.ailmentType)
+		]);
+		const [pierced, blocked] = _.partition(
+			withResists,
+			([_, resist]) => resist == 'Weak' || resist == 'Neutral' || resist == 'Strong'
+		);
+		if (blocked.length != 0) {
+			failPressTurnMod = 4;
+		}
+		blocked.forEach(([target, _]) => {
+			results.push({ kind: 'AilmentBlocked', target: target });
+		});
+
+		//TODO: Get passive mods
+		const accuracyMult = 1;
+
+		//Roll hits
+		const [hits, misses] = _.partition(pierced, ([target, resist]) => {
+			let accuracy = skill.accuracy * accuracyMult;
+			if (resist == 'Weak') {
+				accuracy = Math.floor(accuracy * 1.5);
+			} else if (resist == 'Strong') {
+				accuracy = Math.floor(accuracy * 0.5);
+			}
+			return rollHit(
+				accuracy,
+				user.character.stats.agility,
+				target.character.stats.agility,
+				buffToBuffMult(user.buffLevels, target.buffLevels, 'Accuracy')
+			);
+		});
+
+		misses.forEach(([target, _]) => results.push({ kind: 'AilmentMissed', target }));
+		hits.forEach(([target, _]) =>
+			results.push({ kind: 'AilmentApplied', args: { arg: skill.ailmentType, target } })
+		);
+		//apply ailments
+		if (failPressTurnMod > 0) {
+			results.push({ kind: 'PressTurnMod', amount: failPressTurnMod });
+		} else if (weakFlag) {
+			results.push({ kind: 'PressTurnMod', amount: 1 });
+		} else {
+			results.push({ kind: 'PressTurnMod', amount: 2 });
+		}
+
+		return results;
+	}
+	private resolveSupport(
+		skill: CompendiumSupportSkill,
+		user: Combatant,
+		targets: Combatant[]
+	): ActionResult[] {
+		const results = new Array<ActionResult>();
+
+		if (skill.dekaja) {
+		}
+		if (skill.dekunda) {
+		}
+		if (skill.doping) {
+		}
+		if (skill.pierce) {
+		}
+		if (skill.buffMods) {
+		}
+		if (skill.tetrakarn) {
+		}
+		if (skill.makarakarn) {
+		}
+		if (skill.tetrabreak) {
+		}
+		if (skill.makarabreak) {
+		}
+		if (skill.concentrate) {
+		}
+		if (skill.smileCharge) {
+		}
+
 		return [];
 	}
-	private resolveSupport(skill: CompendiumSupportSkill, targets: Combatant[]): ActionResult[] {
+	private resolveRecovery(
+		skill: CompendiumRecoverySkill,
+		user: Combatant,
+		targets: Combatant[]
+	): ActionResult[] {
 		return [];
 	}
-	private resolveRecovery(skill: CompendiumRecoverySkill, targets: Combatant[]): ActionResult[] {
-		return [];
-	}
-	private resolveSpecial(skill: CompendiumSpecialSkill, targets: Combatant[]): ActionResult[] {
+	private resolveSpecial(
+		skill: CompendiumSpecialSkill,
+		user: Combatant,
+		targets: Combatant[]
+	): ActionResult[] {
 		return [];
 	}
 	//Take the result of an action and use it to modify the state of the battle.
@@ -319,9 +424,11 @@ export class BattleState {
 	applyActionResult(result: ActionResult) {
 		switch (result.kind) {
 			case 'SkillUsed':
+				break;
 			case 'WeaknessHit':
-			case 'Critical':
 			case 'SkillMissed':
+			case 'Critical':
+			//check for smirk
 			case 'DamageNulled':
 				break;
 			case 'DamageDealt':
@@ -366,8 +473,9 @@ export class BattleState {
 				return `${result.args.character.displayName} weakness hit!`;
 			case 'Critical':
 				return `${result.args.character.displayName} was critically hit!`;
+			case 'AilmentMissed':
 			case 'SkillMissed':
-				return `${result.args.character.displayName} missed!`;
+				return `${result.target.character.displayName} dodged!`;
 			case 'DamageNulled':
 				return `${result.args.character.displayName} nulled damage!`;
 			case 'DamageDealt':
@@ -383,9 +491,46 @@ export class BattleState {
 			case 'AilmentApplied':
 				return `${result.args.target.character.displayName} was ${result.args.arg}`;
 			case 'AilmentCleansed':
-				return '';
+				return `${result.args.target.character.displayName} was cured of ${result.args.arg}`;
+			case 'ResistanceChange':
+				return `${result.target.character.displayName}'s resistances changed!`;
+			case 'AilmentBlocked':
+				return `${result.target.character.displayName} blocked the attack!`;
+			case 'Dekaja':
+				return `${result.target.character.displayName}'s buffs were dispelled!`;
+			case 'Dekunda':
+				return `${result.target.character.displayName}'s debuffs were dispelled!`;
+			case 'Doping':
+				return `${result.args.target.character.displayName}'s max health temporarily increased!`;
+			case 'Tetrakarn':
+				return `${result.target.character.displayName} gained a physical barrier!`;
+			case 'Makarakarn':
+				return `${result.target.character.displayName} gained a magical barrier!`;
+			case 'Tetrabreak':
+				return `${result.target.character.displayName}'s physical barrier was broken!`;
+			case 'Makarabreak':
+				return `${result.target.character.displayName}'s magical barrier was broken!`;
+			case 'Concentrate':
+				return `${result.target.character.displayName}'s next attack was empowered!`;
+			case 'Smirk':
+				return `${result.target.character.displayName} began smirking!`;
+			case 'SmirkRemoved':
+				return `${result.target.character.displayName} stopped smirking!`;
+			case 'PierceCharge':
+				return `${result.args.target.character.displayName}'s next attack will pierce!`;
+			case 'BuffModified':
+				let lastPart: string;
+				if (result.args.arg.amount < 0) {
+					lastPart = `was decreased ${Math.abs(result.args.arg.amount)} stages!`;
+				} else {
+					lastPart = `was increased ${Math.abs(result.args.arg.amount)} stages!`;
+				}
+				return `${result.args.target.character.displayName}'s ${result.args.arg.buff} ${lastPart}`;
+			case 'MPSpent':
+			case 'EndsTurn':
+			case 'PressTurnMod':
+				return null;
 		}
-		return null;
 	}
 }
 
@@ -413,8 +558,10 @@ export type ActionResult =
 	| { kind: 'Revived'; args: TargetResult<number> }
 	| { kind: 'AilmentApplied'; args: TargetResult<AilmentType> }
 	| { kind: 'AilmentCleansed'; args: TargetResult<AilmentType> }
+	| { kind: 'AilmentBlocked'; target: Combatant }
+	| { kind: 'AilmentMissed'; target: Combatant }
 	| { kind: 'BuffModified'; args: TargetResult<{ buff: BuffType; amount: number }> }
-	| { kind: 'SkillMissed'; args: Combatant }
+	| { kind: 'SkillMissed'; target: Combatant }
 	| { kind: 'WeaknessHit'; args: Combatant }
 	| { kind: 'Critical'; args: Combatant }
 	| {
@@ -422,6 +569,18 @@ export type ActionResult =
 			args: { reflector: Combatant; reciever: Combatant; amount: number };
 	  }
 	| { kind: 'DamageDrained'; args: TargetResult<number> }
-	| { kind: 'DamageNulled'; args: Combatant };
+	| { kind: 'DamageNulled'; args: Combatant }
+	| { kind: 'Dekaja'; target: Combatant }
+	| { kind: 'Dekunda'; target: Combatant }
+	| { kind: 'Doping'; args: TargetResult<number> }
+	| { kind: 'PierceCharge'; args: TargetResult<SMTElement> }
+	| { kind: 'Tetrakarn'; target: Combatant }
+	| { kind: 'Makarakarn'; target: Combatant }
+	| { kind: 'Tetrabreak'; target: Combatant }
+	| { kind: 'Makarabreak'; target: Combatant }
+	| { kind: 'Concentrate'; target: Combatant }
+	| { kind: 'ResistanceChange'; target: Combatant; resists: [SMTElement, ResistType][] }
+	| { kind: 'Smirk'; target: Combatant }
+	| { kind: 'SmirkRemoved'; target: Combatant };
 
 export type Side = 'Player' | 'Enemy';

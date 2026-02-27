@@ -6,6 +6,8 @@
 	let { battle }: { battle: BattleState } = $props();
 	let test = $state(new Array<ActionResult>());
 	const debugFlames = getCompendium().skills.get('debug.skills.debugFlames');
+	const debugPoison = getCompendium().skills.get('debug.skills.debugAilment');
+	const debugHeal = getCompendium().skills.get('debug.skills.debugHeal');
 </script>
 
 <div>
@@ -45,6 +47,27 @@
 			</button>
 			<!-- content here -->
 		{/if}
+		{#if debugPoison}
+			<button
+				onclick={() => {
+					battle.resolveSkill(battle.playerParty.combatants[0], debugPoison, [
+						battle.enemyParty.combatants[0]
+					]);
+				}}
+			>
+				Debug Poison Test
+			</button>
+		{/if}
+		{#if debugHeal}
+			<button
+				onclick={() => {
+					battle.resolveSkill(battle.playerParty.combatants[0], debugHeal, [
+						battle.enemyParty.combatants[0]
+					]);
+				}}>Debug Heal Test</button
+			>
+		{/if}
+
 		<button onclick={() => console.log($state.snapshot(test))}>Log Test</button>
 		<div></div>
 		<!-- bottom -->

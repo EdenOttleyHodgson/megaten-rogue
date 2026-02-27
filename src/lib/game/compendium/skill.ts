@@ -18,7 +18,7 @@ export type CompendiumSkill =
 export interface BaseCompendiumSkill extends CompendiumItem {
 	mpCost: number;
 	targeting: CompendiumTargeting;
-	extraEffects: string[] | CompendiumSkill[];
+	//extraEffects: string[] | CompendiumSkill[]; This needs a rethonk
 }
 
 export interface CompendiumAttackSkill extends BaseCompendiumSkill {
