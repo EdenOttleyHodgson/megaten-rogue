@@ -5,6 +5,7 @@ import {
 	resistArrayGet,
 	type BuffArray,
 	type BuffType,
+	type EffectDuration,
 	type NullableResistArray,
 	type ResistType,
 	type SMTElement
@@ -19,15 +20,39 @@ export class Combatant {
 	buffLevels: BuffArray = $state(NEUTRAL_BUFF_ARRAY);
 	smirking: boolean = $state(false);
 	concentrating: number | undefined = $state(undefined);
-	pierces: SMTElement[] = $state([]);
-	tempResistMods = new SvelteMap<SMTElement, ResistType>();
+	pierces = new SvelteMap<SMTElement | 'all', EffectDuration>();
+	tempResistMods = new SvelteMap<SMTElement, [ResistType, EffectDuration]>();
+	tetrakarn = $state(false);
+	makarakarn = $state(false);
 	constructor(character: Character, side: Side) {
 		this.character = $state(character);
 		this.side = side;
 	}
 
+	handleEndTurn() {
+		this.pierces.entries().forEach(([elem, duration]) => {
+			if (duration != 'Permanent' && duration != 'NextAttack') {
+				if (duration - 1 == 0) {
+					this.pierces.delete(elem);
+				} else {
+					this.pierces.set(elem, duration - 1);
+				}
+			}
+		});
+		this.tempResistMods.entries().forEach(([elem, [resistType, duration]]) => {
+			if (duration != 'Permanent' && duration != 'NextAttack') {
+				if (duration - 1 == 0) {
+					this.tempResistMods.delete(elem);
+				} else {
+					this.tempResistMods.set(elem, [resistType, duration - 1]);
+				}
+			}
+		});
+		//TODO: Ailment cleanse rolls, poison damage
+	}
+
 	getResist(elem: SMTElement): ResistType {
-		const tempResist = this.tempResistMods.get(elem);
+		const tempResist = this.tempResistMods.get(elem)?.[0];
 		return tempResist || resistArrayGet(this.character.resists, elem);
 	}
 
@@ -46,5 +71,45 @@ export class Combatant {
 				this.buffLevels.accuracy = withinBounds(this.buffLevels.accuracy + amount, -3, 3);
 				break;
 		}
+	}
+	removeBuffs() {
+		this.buffLevels.attack = Math.min(0, this.buffLevels.attack);
+		this.buffLevels.defence = Math.min(0, this.buffLevels.defence);
+		this.buffLevels.accuracy = Math.min(0, this.buffLevels.accuracy);
+		this.buffLevels.evasion = Math.min(0, this.buffLevels.evasion);
+	}
+	removeDebuffs() {
+		this.buffLevels.attack = Math.max(0, this.buffLevels.attack);
+		this.buffLevels.defence = Math.max(0, this.buffLevels.defence);
+		this.buffLevels.accuracy = Math.max(0, this.buffLevels.accuracy);
+		this.buffLevels.evasion = Math.max(0, this.buffLevels.evasion);
+	}
+	setTetrakarn(value: boolean) {
+		this.tetrakarn = value;
+	}
+	setMakarakarn(value: boolean) {
+		this.makarakarn = value;
+	}
+	setSmirk(value: boolean) {
+		this.smirking = value;
+	}
+	setConcentrate(value: number | undefined) {
+		this.concentrating = value;
+	}
+	setPierce(elements: SMTElement[] | 'all', duration: EffectDuration) {
+		if (elements == 'all') {
+			this.pierces.set('all', duration);
+		} else {
+			elements.forEach((element) => {
+				this.pierces.set(element, duration);
+			});
+		}
+	}
+	modifyResists(
+		elements: { element: SMTElement; resistType: ResistType; duration: EffectDuration }[]
+	) {
+		elements.forEach(({ element, resistType, duration }) => {
+			this.tempResistMods.set(element, [resistType, duration]);
+		});
 	}
 }

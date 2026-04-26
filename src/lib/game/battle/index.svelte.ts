@@ -6,12 +6,14 @@ import type {
 	CompendiumSpecialSkill,
 	CompendiumSupportSkill
 } from '$lib/game/compendium/skill';
+import { exhaustGuard } from '$lib/utils';
 import {
 	affinityEffectMult,
 	buffToBuffMult,
 	getAffinityEffects,
 	type AilmentType,
 	type BuffType,
+	type EffectDuration,
 	type ResistType,
 	type SMTElement
 } from '../gameTypes';
@@ -386,29 +388,45 @@ export class BattleState {
 		targets: Combatant[]
 	): ActionResult[] {
 		const results = new Array<ActionResult>();
-
-		if (skill.dekaja) {
-		}
-		if (skill.dekunda) {
-		}
-		if (skill.doping) {
-		}
-		if (skill.pierce) {
-		}
-		if (skill.buffMods) {
-		}
-		if (skill.tetrakarn) {
-		}
-		if (skill.makarakarn) {
-		}
-		if (skill.tetrabreak) {
-		}
-		if (skill.makarabreak) {
-		}
-		if (skill.concentrate) {
-		}
-		if (skill.smileCharge) {
-		}
+		targets.forEach((target) => {
+			if (skill.dekaja) {
+				results.push({ kind: 'Dekaja', target });
+			}
+			if (skill.dekunda) {
+				results.push({ kind: 'Dekunda', target });
+			}
+			if (skill.pierce) {
+				results.push({
+					kind: 'PierceCharge',
+					target,
+					elements: skill.pierce.elements,
+					duration: skill.pierce.duration
+				});
+			}
+			if (skill.buffMods) {
+				skill.buffMods.forEach(([buff, amount]) => {
+					results.push({ kind: 'BuffModified', args: { target, arg: { buff, amount } } });
+				});
+			}
+			if (skill.tetrakarn) {
+				results.push({ kind: 'Tetrakarn', target });
+			}
+			if (skill.makarakarn) {
+				results.push({ kind: 'Makarakarn', target });
+			}
+			if (skill.tetrabreak) {
+				results.push({ kind: 'Tetrabreak', target });
+			}
+			if (skill.makarabreak) {
+				results.push({ kind: 'Makarabreak', target });
+			}
+			if (skill.concentrate) {
+				results.push({ kind: 'Concentrate', args: { target, arg: skill.concentrate } });
+			}
+			if (skill.smileCharge) {
+				results.push({ kind: 'Smirk', target });
+			}
+		});
 
 		return [];
 	}
@@ -455,7 +473,9 @@ export class BattleState {
 	applyActionResult(result: ActionResult) {
 		switch (result.kind) {
 			case 'SkillUsed':
+			case 'AilmentMissed':
 				break;
+			case 'AilmentBlocked':
 			case 'WeaknessHit':
 			case 'SkillMissed':
 			case 'Critical':
@@ -493,6 +513,42 @@ export class BattleState {
 			case 'BuffModified':
 				result.args.target.modifyBuff(result.args.arg.buff, result.args.arg.amount);
 				break;
+			case 'Dekaja':
+				result.target.removeBuffs();
+				break;
+
+			case 'Dekunda':
+				result.target.removeDebuffs();
+				break;
+			case 'Tetrakarn':
+				result.target.setTetrakarn(true);
+				break;
+			case 'Makarakarn':
+				result.target.setMakarakarn(true);
+				break;
+			case 'Tetrabreak':
+				result.target.setTetrakarn(false);
+				break;
+			case 'Makarabreak':
+				result.target.setMakarakarn(false);
+				break;
+			case 'ResistanceChange':
+				result.target.modifyResists(result.resists);
+				break;
+			case 'Smirk':
+				result.target.setSmirk(true);
+				break;
+			case 'SmirkRemoved':
+				result.target.setSmirk(false);
+				break;
+			case 'Concentrate':
+				result.args.target.setConcentrate(result.args.arg);
+				break;
+			case 'PierceCharge':
+				result.target.setPierce(result.elements, result.duration);
+				break;
+			default:
+				exhaustGuard(result);
 		}
 	}
 
@@ -531,8 +587,6 @@ export class BattleState {
 				return `${result.target.character.displayName}'s buffs were dispelled!`;
 			case 'Dekunda':
 				return `${result.target.character.displayName}'s debuffs were dispelled!`;
-			case 'Doping':
-				return `${result.args.target.character.displayName}'s max health temporarily increased!`;
 			case 'Tetrakarn':
 				return `${result.target.character.displayName} gained a physical barrier!`;
 			case 'Makarakarn':
@@ -542,13 +596,13 @@ export class BattleState {
 			case 'Makarabreak':
 				return `${result.target.character.displayName}'s magical barrier was broken!`;
 			case 'Concentrate':
-				return `${result.target.character.displayName}'s next attack was empowered!`;
+				return `${result.args.target.character.displayName}'s next attack was empowered!`;
 			case 'Smirk':
 				return `${result.target.character.displayName} began smirking!`;
 			case 'SmirkRemoved':
 				return `${result.target.character.displayName} stopped smirking!`;
 			case 'PierceCharge':
-				return `${result.args.target.character.displayName}'s next attack will pierce!`;
+				return `${result.target.character.displayName}'s next attack will pierce!`;
 			case 'BuffModified':
 				let lastPart: string;
 				if (result.args.arg.amount < 0) {
@@ -564,10 +618,6 @@ export class BattleState {
 		}
 	}
 }
-
-//TODO: This interface needs to be like bee put in the log - tbh there needs to be a whole interface
-//hierarchy of results
-//
 
 //Type alias for a target, and an amount
 type TargetResult<T> = { target: Combatant; arg: T };
@@ -603,14 +653,22 @@ export type ActionResult =
 	| { kind: 'DamageNulled'; args: Combatant }
 	| { kind: 'Dekaja'; target: Combatant }
 	| { kind: 'Dekunda'; target: Combatant }
-	| { kind: 'Doping'; args: TargetResult<number> }
-	| { kind: 'PierceCharge'; args: TargetResult<SMTElement> }
+	| {
+			kind: 'PierceCharge';
+			target: Combatant;
+			elements: SMTElement[] | 'all';
+			duration: EffectDuration;
+	  }
 	| { kind: 'Tetrakarn'; target: Combatant }
 	| { kind: 'Makarakarn'; target: Combatant }
 	| { kind: 'Tetrabreak'; target: Combatant }
 	| { kind: 'Makarabreak'; target: Combatant }
-	| { kind: 'Concentrate'; target: Combatant }
-	| { kind: 'ResistanceChange'; target: Combatant; resists: [SMTElement, ResistType][] }
+	| { kind: 'Concentrate'; args: TargetResult<number> }
+	| {
+			kind: 'ResistanceChange';
+			target: Combatant;
+			resists: { element: SMTElement; resistType: ResistType; duration: EffectDuration }[];
+	  }
 	| { kind: 'Smirk'; target: Combatant }
 	| { kind: 'SmirkRemoved'; target: Combatant };
 

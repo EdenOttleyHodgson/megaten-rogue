@@ -363,3 +363,5 @@ export type CompendiumTargeting =
 	| 'RandomEnemies'
 	| 'Self'
 	| 'Everyone';
+
+export type EffectDuration = 'NextAttack' | 'Permanent' | number;

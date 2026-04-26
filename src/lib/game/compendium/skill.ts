@@ -2,6 +2,7 @@ import type {
 	AilmentType,
 	BuffType,
 	CompendiumTargeting,
+	EffectDuration,
 	ResistType,
 	SMTElement
 } from '$lib/game/gameTypes';
@@ -44,7 +45,7 @@ export interface CompendiumSupportSkill extends BaseCompendiumSkill {
 	tetrakarn: null | boolean;
 	makarakarn: null | boolean;
 	doping: null | number;
-	pierce: null | SMTElement[] | 'all';
+	pierce: null | { elements: SMTElement[] | 'all'; duration: EffectDuration };
 	tetrabreak: null | boolean;
 	makarabreak: null | boolean;
 }
