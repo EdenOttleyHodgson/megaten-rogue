@@ -78,6 +78,7 @@ const DEBUG_FLAMES: CompendiumSkill = {
 		element: 'Fire',
 		mpCost: 10,
 		targeting: 'OneEnemy',
+		endsTurn: true,
 		//		extraEffects: [],
 
 		power: 100,
@@ -95,7 +96,8 @@ const DEBUG_HEAL: CompendiumSkill = {
 		targeting: 'Self',
 		healPercent: 20,
 		revives: null,
-		ailmentsCleansed: null
+		ailmentsCleansed: null,
+		endsTurn: true
 		//		extraEffects: []
 	}
 };
@@ -107,7 +109,8 @@ const DEBUG_AILMENT: CompendiumSkill = {
 		mpCost: 10,
 		targeting: 'OneEnemy',
 		ailmentType: 'Poison',
-		accuracy: 75
+		accuracy: 75,
+		endsTurn: true
 		//		extraEffects: []
 	}
 };

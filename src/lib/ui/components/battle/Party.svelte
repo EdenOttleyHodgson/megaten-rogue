@@ -5,7 +5,7 @@
 	let { party }: { party: Party } = $props();
 </script>
 
-<div class="flex w-full flex-row">
+<div class="flex w-full flex-col">
 	{#each party.combatants as combatant}
 		<Combatant {combatant}></Combatant>
 	{/each}

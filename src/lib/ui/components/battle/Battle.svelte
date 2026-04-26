@@ -11,12 +11,16 @@
 </script>
 
 <div>
+	<div class="w-full text-center">
+		<p>Current Press Turns: {battle.currentPressTurns}</p>
+		<p>Current Combatant: {battle.currentCombatant.character.displayName}</p>
+	</div>
 	<div class="flex w-full justify-evenly">
 		<!-- top -->
 		<div class="w-1/5">
 			<Party party={battle.playerParty}></Party>
 		</div>
-		<div class="overflow-scroll">
+		<div class="flex flex-col overflow-scroll">
 			{#each battle.battleLogTexts as text}
 				<p>{text}</p>
 			{/each}
@@ -26,9 +30,10 @@
 		</div>
 	</div>
 	<div class="flex flex-col">
-		<button onclick={() => battle.damageTest()}>Damage Test</button>
+		<button class="border" onclick={() => battle.damageTest()}>Damage Test</button>
 		{#if debugFlames}
 			<button
+				class="border"
 				onclick={() =>
 					battle.resolveSkill(battle.playerParty.combatants[0], debugFlames, [
 						battle.enemyParty.combatants[0]
@@ -36,6 +41,7 @@
 			>
 
 			<button
+				class="border"
 				onclick={() =>
 					console.log(
 						battle.resolveSkill(battle.playerParty.combatants[0], debugFlames, [
@@ -49,6 +55,7 @@
 		{/if}
 		{#if debugPoison}
 			<button
+				class="border"
 				onclick={() => {
 					battle.resolveSkill(battle.playerParty.combatants[0], debugPoison, [
 						battle.enemyParty.combatants[0]
@@ -60,6 +67,7 @@
 		{/if}
 		{#if debugHeal}
 			<button
+				class="border-1"
 				onclick={() => {
 					battle.resolveSkill(battle.playerParty.combatants[0], debugHeal, [
 						battle.enemyParty.combatants[0]

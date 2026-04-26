@@ -16,6 +16,6 @@ export class Party {
 		return this.stats().map(statFunc);
 	}
 	public size(): number {
-		return this.combatants.length;
+		return this.combatants.filter((x) => !x.character.dead).length;
 	}
 }

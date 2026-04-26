@@ -37,7 +37,10 @@ export class BattleState {
 	battleLog: ActionResult[] = $state([]);
 	battleLogTexts = $derived(this.battleLog.map((x) => this.actionResultToMessage(x)));
 	//Turn order is always first slot, SMTV style
-	currentCombatantTurn: number = 0;
+	currentCombatantTurn: number = $state(0);
+	currentCombatant: Combatant = $derived.by(
+		() => this.currentParty().combatants[this.currentCombatantTurn]
+	);
 	constructor(playerParty: Party, enemyParty: Party) {
 		this.playerParty = $state(playerParty);
 		this.enemyParty = $state(enemyParty);
@@ -46,19 +49,27 @@ export class BattleState {
 
 		//add press turns accordingly
 		if (this.currentSide == 'Player') {
-			this.currentPressTurns = playerParty.size();
+			this.currentPressTurns = playerParty.size() * 2;
 		} else {
-			this.currentPressTurns = enemyParty.size();
+			this.currentPressTurns = enemyParty.size() * 2;
 		}
 	}
 
-	modifyTurns(amount: number) {
-		this.currentPressTurns += amount;
-		if (this.currentPressTurns <= 0) {
-			this.sideSwitch();
-		}
+	reduceTurns(amount: number) {
+		this.currentPressTurns -= amount;
 	}
-	sideSwitch() {}
+	sideSwitch() {
+		const newSide = flipSide(this.currentSide);
+		const nextParty = newSide == 'Enemy' ? this.enemyParty : this.playerParty;
+		this.currentCombatantTurn = 0;
+		this.currentPressTurns = nextParty.size() * 2;
+		this.currentSide = newSide;
+		this.battleLog = [...this.battleLog, { kind: 'SideSwitch', newSide }];
+	}
+
+	currentParty() {
+		return this.currentSide == 'Player' ? this.playerParty : this.enemyParty;
+	}
 
 	damageTest() {
 		this.playerParty.combatants[0].character.damage(1);
@@ -87,18 +98,40 @@ export class BattleState {
 			console.error(err);
 			return;
 		}
-		let endsTurn = false;
 		results.forEach((result) => {
-			if (result.kind == 'EndsTurn') {
-				endsTurn = true;
-			} else {
-				this.applyActionResult(result);
-			}
+			this.applyActionResult(result);
 		});
-		if (endsTurn) {
+		const endsTurn = skill.skill.endsTurn;
+		const sideSwitch = this.currentPressTurns <= 0;
+		//Side switching handles the turn changeover to the other side, so we dont need to
+		//do that here
+		if (sideSwitch || endsTurn) {
+			this.currentCombatant.handleEndTurn();
+		}
+		if (endsTurn && !sideSwitch) {
+			console.log('ending turn');
+			console.log(this.currentCombatantTurn, this.currentParty().size());
+
+			this.currentCombatantTurn = (this.currentCombatantTurn + 1) % this.currentParty().size();
+			console.log(this.currentCombatantTurn);
+			console.log(this.currentCombatant);
 		}
 
 		this.battleLog = [...this.battleLog, ...results.filter((x) => x)];
+		if (sideSwitch || endsTurn) {
+			this.currentCombatant.handleEndTurn();
+		}
+		if (endsTurn && !sideSwitch) {
+			console.log('ending turn');
+			console.log(this.currentCombatantTurn, this.currentParty().size());
+
+			this.currentCombatantTurn = (this.currentCombatantTurn + 1) % this.currentParty().size();
+			console.log(this.currentCombatantTurn);
+			console.log(this.currentCombatant);
+		}
+		if (sideSwitch) {
+			this.sideSwitch();
+		}
 	}
 
 	private calculateSkillResult(
@@ -473,6 +506,7 @@ export class BattleState {
 	applyActionResult(result: ActionResult) {
 		switch (result.kind) {
 			case 'SkillUsed':
+			case 'SideSwitch':
 			case 'AilmentMissed':
 				break;
 			case 'AilmentBlocked':
@@ -508,7 +542,7 @@ export class BattleState {
 				//handle later
 				break;
 			case 'PressTurnMod':
-				this.modifyTurns(result.amount);
+				this.reduceTurns(result.amount);
 				break;
 			case 'BuffModified':
 				result.args.target.modifyBuff(result.args.arg.buff, result.args.arg.amount);
@@ -611,6 +645,8 @@ export class BattleState {
 					lastPart = `was increased ${Math.abs(result.args.arg.amount)} stages!`;
 				}
 				return `${result.args.target.character.displayName}'s ${result.args.arg.buff} ${lastPart}`;
+			case 'SideSwitch':
+				return `${result.newSide} Turn!`;
 			case 'MPSpent':
 			case 'EndsTurn':
 			case 'PressTurnMod':
@@ -670,6 +706,10 @@ export type ActionResult =
 			resists: { element: SMTElement; resistType: ResistType; duration: EffectDuration }[];
 	  }
 	| { kind: 'Smirk'; target: Combatant }
-	| { kind: 'SmirkRemoved'; target: Combatant };
+	| { kind: 'SmirkRemoved'; target: Combatant }
+	| { kind: 'SideSwitch'; newSide: Side };
 
 export type Side = 'Player' | 'Enemy';
+function flipSide(side: Side) {
+	return side == 'Player' ? 'Enemy' : 'Player';
+}
