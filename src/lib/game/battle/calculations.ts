@@ -36,6 +36,12 @@ export function calculateDamage(
 	);
 }
 
+export function calculateHeal(healPercent: number, userMagic: number, targetMaxHp: number): number {
+	return Math.round(
+		targetMaxHp * ((healPercent * (1 + userMagic / 200)) / 100) * randomArbitrary(0.95, 1.05)
+	);
+}
+
 export function rollHit(
 	skillAccuracy: number,
 	attackerAgi: number,

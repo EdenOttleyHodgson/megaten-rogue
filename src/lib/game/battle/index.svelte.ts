@@ -15,7 +15,14 @@ import {
 	type ResistType,
 	type SMTElement
 } from '../gameTypes';
-import { actsFirst, calculateDamage, CRIT_DAMAGE_MULT, rollCrit, rollHit } from './calcualations';
+import {
+	actsFirst,
+	calculateDamage,
+	calculateHeal,
+	CRIT_DAMAGE_MULT,
+	rollCrit,
+	rollHit
+} from './calculations';
 import type { Combatant } from './combatant.svelte';
 import type { Party } from './party.svelte';
 import _, { partition } from 'underscore';
@@ -410,7 +417,31 @@ export class BattleState {
 		user: Combatant,
 		targets: Combatant[]
 	): ActionResult[] {
-		return [];
+		const results: ActionResult[] = [];
+		targets.forEach((target) => {
+			if (skill.revives) {
+				results.push({ kind: 'Revived', args: { target, arg: skill.revives } });
+			}
+			if (skill.healPercent) {
+				results.push({
+					kind: 'HealingDone',
+					args: {
+						target,
+						arg: calculateHeal(
+							skill.healPercent,
+							user.character.stats.magic,
+							target.character.stats.hp
+						)
+					}
+				});
+			}
+			if (skill.ailmentsCleansed) {
+				skill.ailmentsCleansed.forEach((ailment) => {
+					results.push({ kind: 'AilmentCleansed', args: { target, arg: ailment } });
+				});
+			}
+		});
+		return results;
 	}
 	private resolveSpecial(
 		skill: CompendiumSpecialSkill,
