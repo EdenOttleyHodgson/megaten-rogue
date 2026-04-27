@@ -101,33 +101,14 @@ export class BattleState {
 		results.forEach((result) => {
 			this.applyActionResult(result);
 		});
+		this.battleLog = [...this.battleLog, ...results.filter((x) => x)];
 		const endsTurn = skill.skill.endsTurn;
 		const sideSwitch = this.currentPressTurns <= 0;
-		//Side switching handles the turn changeover to the other side, so we dont need to
-		//do that here
 		if (sideSwitch || endsTurn) {
 			this.currentCombatant.handleEndTurn();
 		}
 		if (endsTurn && !sideSwitch) {
-			console.log('ending turn');
-			console.log(this.currentCombatantTurn, this.currentParty().size());
-
 			this.currentCombatantTurn = (this.currentCombatantTurn + 1) % this.currentParty().size();
-			console.log(this.currentCombatantTurn);
-			console.log(this.currentCombatant);
-		}
-
-		this.battleLog = [...this.battleLog, ...results.filter((x) => x)];
-		if (sideSwitch || endsTurn) {
-			this.currentCombatant.handleEndTurn();
-		}
-		if (endsTurn && !sideSwitch) {
-			console.log('ending turn');
-			console.log(this.currentCombatantTurn, this.currentParty().size());
-
-			this.currentCombatantTurn = (this.currentCombatantTurn + 1) % this.currentParty().size();
-			console.log(this.currentCombatantTurn);
-			console.log(this.currentCombatant);
 		}
 		if (sideSwitch) {
 			this.sideSwitch();
