@@ -112,4 +112,11 @@ export class Combatant {
 			this.tempResistMods.set(element, [resistType, duration]);
 		});
 	}
+	//TODO: Implement these checks
+	canSummon(): boolean {
+		return true;
+	}
+	canUseItems(): boolean {
+		return true;
+	}
 }

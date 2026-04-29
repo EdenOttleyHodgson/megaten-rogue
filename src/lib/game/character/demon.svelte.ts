@@ -17,6 +17,7 @@ export function demonClassFromCompendium(level: number, demonData: CompendiumDem
 			if (!skillData) {
 				throw new Error('Nonexistent skill');
 			}
+
 			return skillData;
 		});
 	return {

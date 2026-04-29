@@ -1,12 +1,14 @@
 <script lang="ts">
+	import type { Combatant } from '$lib/game/battle/combatant.svelte';
 	import type { Party } from '$lib/game/battle/party.svelte';
-	import Combatant from './Combatant.svelte';
+	import CombatantComponent from './Combatant.svelte';
 
-	let { party }: { party: Party } = $props();
+	let { party, onCombatantClick }: { party: Party; onCombatantClick: (c: Combatant) => void } =
+		$props();
 </script>
 
 <div class="flex w-full flex-col">
 	{#each party.combatants as combatant}
-		<Combatant {combatant}></Combatant>
+		<CombatantComponent {combatant} {onCombatantClick}></CombatantComponent>
 	{/each}
 </div>

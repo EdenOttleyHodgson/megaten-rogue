@@ -13,6 +13,7 @@ import {
 	getAffinityEffects,
 	type AilmentType,
 	type BuffType,
+	type CompendiumTargeting,
 	type EffectDuration,
 	type ResistType,
 	type SMTElement
@@ -67,6 +68,13 @@ export class BattleState {
 		this.battleLog = [...this.battleLog, { kind: 'SideSwitch', newSide }];
 	}
 
+	getCombatantsParty(c: Combatant): Party {
+		return this.getPartyForSide(c.side);
+	}
+	getPartyForSide(s: Side): Party {
+		return s == 'Player' ? this.playerParty : this.enemyParty;
+	}
+
 	currentParty() {
 		return this.currentSide == 'Player' ? this.playerParty : this.enemyParty;
 	}
@@ -78,14 +86,39 @@ export class BattleState {
 	//Checks if skill can be used
 	canUseSkill(user: Combatant, skill: CompendiumSkill): boolean {
 		//TODO
-		return true;
+		return (
+			user.character.currentMp >= skill.skill.mpCost && !user.character.currentAilments.has('Mute')
+		);
 	}
 
-	validSkillTargets(user: Combatant, skill: CompendiumSkill): Combatant[] {
-		return [];
+	validSkillTargets(user: Combatant, skill: CompendiumSkill): Combatant[] | 'All' {
+		let validFunction: (v: Combatant) => boolean = (v) => !v.character.dead;
+		if (skill.kind == 'Recovery') {
+			if (skill.skill.revives && skill.skill.healPercent) {
+				validFunction = (_) => true;
+			} else if (skill.skill.revives) {
+				validFunction = (v) => v.character.dead;
+			}
+		}
+
+		switch (skill.skill.targeting) {
+			case 'Self':
+				return validFunction(user) ? [user] : [];
+			case 'OneAlly':
+				return this.getPartyForSide(user.side).combatants.filter(validFunction);
+			case 'OneEnemy':
+				return this.getPartyForSide(flipSide(user.side)).combatants.filter(validFunction);
+			case 'AllAllies':
+			case 'AllEnemies':
+			case 'RandomAllies':
+			case 'RandomEnemies':
+			case 'Everyone':
+				return 'All';
+		}
 	}
 
 	resolveSkill(user: Combatant, skill: CompendiumSkill, targets: Combatant[]) {
+		//TODO: Check for ailment cancels
 		let results;
 		let skillUsed: ActionResult = {
 			kind: 'SkillUsed',
@@ -108,7 +141,12 @@ export class BattleState {
 			this.currentCombatant.handleEndTurn();
 		}
 		if (endsTurn && !sideSwitch) {
-			this.currentCombatantTurn = (this.currentCombatantTurn + 1) % this.currentParty().size();
+			if (this.currentParty().size() != 0) {
+				do {
+					this.currentCombatantTurn = (this.currentCombatantTurn + 1) % this.currentParty().size();
+				} while (this.currentCombatant.character.dead);
+				//TODO: Check for sleeping and if so end their turn
+			}
 		}
 		if (sideSwitch) {
 			this.sideSwitch();
@@ -442,7 +480,7 @@ export class BattleState {
 			}
 		});
 
-		return [];
+		return results;
 	}
 	private resolveRecovery(
 		skill: CompendiumRecoverySkill,
@@ -634,11 +672,39 @@ export class BattleState {
 				return null;
 		}
 	}
+
+	resolveTargets(targeting: CompendiumTargeting, target: Combatant | null): Combatant[] {
+		switch (targeting) {
+			case 'Self':
+				return [this.currentCombatant];
+			case 'OneAlly':
+			case 'OneEnemy':
+				if (target) {
+					return [target];
+				} else {
+					throw Error('No target given to resolve targets when it is needed');
+				}
+			case 'AllAllies':
+				[...this.playerParty.combatants];
+			case 'AllEnemies':
+				[...this.enemyParty.combatants];
+			case 'RandomAllies':
+				throw Error('This needs a rethink');
+			case 'RandomEnemies':
+				throw Error('This needs a rethink');
+			case 'Everyone':
+				return [...this.playerParty.combatants, ...this.enemyParty.combatants];
+
+			default:
+				exhaustGuard(targeting);
+		}
+	}
 }
 
 //Type alias for a target, and an amount
 type TargetResult<T> = { target: Combatant; arg: T };
 
+//TODO: Ailment skip results, buff no effects
 export type ActionResult =
 	| { kind: 'EndsTurn' }
 	| { kind: 'PressTurnMod'; amount: number }

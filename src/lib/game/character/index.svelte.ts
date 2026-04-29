@@ -89,3 +89,5 @@ function classFromCompendiumChar(
 			return { kind: 'Demon', data: demonClassFromCompendium(level, compendiumChar.data) };
 	}
 }
+
+

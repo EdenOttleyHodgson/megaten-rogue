@@ -1,6 +1,8 @@
 <script lang="ts">
+	import type { Combatant } from '$lib/game/battle/combatant.svelte';
 	import type { ActionResult, BattleState } from '$lib/game/battle/index.svelte';
 	import { getCompendium } from '$lib/game/compendium';
+	import ControlBar from './controls/ControlBar.svelte';
 	import Party from './Party.svelte';
 
 	let { battle }: { battle: BattleState } = $props();
@@ -8,6 +10,9 @@
 	const debugFlames = getCompendium().skills.get('debug.skills.debugFlames');
 	const debugPoison = getCompendium().skills.get('debug.skills.debugAilment');
 	const debugHeal = getCompendium().skills.get('debug.skills.debugHeal');
+	let selectedTarget: Combatant | null = $state(null);
+
+	const onCombatantClick = (c: Combatant) => (selectedTarget = c);
 </script>
 
 <div>
@@ -18,7 +23,7 @@
 	<div class="flex w-full justify-evenly">
 		<!-- top -->
 		<div class="w-1/5">
-			<Party party={battle.playerParty}></Party>
+			<Party party={battle.playerParty} {onCombatantClick}></Party>
 		</div>
 		<div class="flex flex-col overflow-scroll">
 			{#each battle.battleLogTexts as text}
@@ -26,7 +31,7 @@
 			{/each}
 		</div>
 		<div class="w-1/5">
-			<Party party={battle.enemyParty}></Party>
+			<Party party={battle.enemyParty} {onCombatantClick}></Party>
 		</div>
 	</div>
 	<div class="flex flex-col">
@@ -77,7 +82,18 @@
 		{/if}
 
 		<button onclick={() => console.log($state.snapshot(test))}>Log Test</button>
-		<div></div>
+		<div>
+			<ControlBar
+				onSkillUse={(skill, target) => {
+					const targets = battle.resolveTargets(skill.skill.targeting, target);
+					battle.resolveSkill(battle.currentCombatant, skill, targets);
+					selectedTarget = null;
+				}}
+				currentCombatant={battle.currentCombatant}
+				{selectedTarget}
+				clearSelection={() => (selectedTarget = null)}
+			></ControlBar>
+		</div>
 		<!-- bottom -->
 	</div>
 </div>

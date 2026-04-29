@@ -1,9 +1,22 @@
 <script lang="ts">
 	import type { Combatant } from '$lib/game/battle/combatant.svelte';
-	let { combatant }: { combatant: Combatant } = $props();
+	let {
+		combatant,
+		onCombatantClick
+	}: { combatant: Combatant; onCombatantClick: (c: Combatant) => void } = $props();
 </script>
 
-<div class="w-full border">
+<div
+	role="button"
+	tabindex="0"
+	onkeydown={() => {
+		onCombatantClick(combatant);
+	}}
+	class="w-full border"
+	onclick={() => {
+		onCombatantClick(combatant);
+	}}
+>
 	<div>
 		<!-- enhanced:img src={'./sprites/' + combatant.character.sprite}></enhanced:img -->
 	</div>
