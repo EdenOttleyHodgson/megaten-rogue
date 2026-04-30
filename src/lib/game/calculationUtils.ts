@@ -13,6 +13,10 @@ export function sumArray(arr: number[]): number {
 	return arr.reduce((acc, x) => acc + x, 0);
 }
 
+export function productOfArray(arr: number[]): number {
+	return arr.reduce((acc, x) => acc * x, 1);
+}
+
 export function meanOfArray(arr: number[]): number {
 	return sumArray(arr) / arr.length;
 }

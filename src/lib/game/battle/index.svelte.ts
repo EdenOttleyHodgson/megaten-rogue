@@ -7,6 +7,7 @@ import type {
 	CompendiumSupportSkill
 } from '$lib/game/compendium/skill';
 import { exhaustGuard } from '$lib/utils';
+import { productOfArray } from '../calculationUtils';
 import {
 	affinityEffectMult,
 	buffToBuffMult,
@@ -246,10 +247,14 @@ export class BattleState {
 
 		const physAttack: boolean = skill.element == 'Phys' || skill.element == 'Gun';
 
-		//TODO: Get passive mods
-		const damageMult = 1;
-		const critMult = 1;
-		const accuracyMult = 1;
+		const passives = attacker.getPassives();
+		const damageMult = productOfArray(
+			passives
+				.filter((passive) => passive.elementBoost && passive.elementBoost.element == skill.element)
+				.map((s) => s.elementBoost?.boost || 1)
+		);
+		const critMult = productOfArray(passives.map((s) => s.critBoost || 1));
+		const accuracyMult = productOfArray(passives.map((s) => s.accuracyBoost || 1));
 
 		const [hits, misses] = _.partition(targets, (target: Combatant) =>
 			rollHit(
@@ -405,6 +410,17 @@ export class BattleState {
 							) * damageMult;
 						const resistHit = crit ? 'Crit' : 'Neutral';
 						results.push({ kind: 'DamageDealt', args: { target, resistHit, amount: damageRoll } });
+						const counterRoll = target.rollCounter(damageRoll, skill.element);
+						if (counterRoll) {
+							results.push({
+								kind: 'CounterDamage',
+								args: { target: attacker, counterer: target }
+							});
+							results.push({
+								kind: 'DamageDealt',
+								args: { target: attacker, resistHit: 'Neutral', amount: counterRoll }
+							});
+						}
 						break;
 
 					default:
@@ -449,11 +465,26 @@ export class BattleState {
 		});
 
 		//TODO: Get passive mods
-		const accuracyMult = 1;
+
+		const passives = user.getPassives();
+		const accuracyMult = productOfArray(
+			passives.map((s) => {
+				let accBoost = s.accuracyBoost || 1;
+				if (s.elementBoost && s.elementBoost.element == skill.ailmentType) {
+					accBoost *= s.elementBoost.boost;
+				}
+				return accBoost;
+			})
+		);
+		const passiveAilmentResist = productOfArray(
+			passives
+				.filter((s) => s.ailmentResist && s.ailmentResist.element == skill.ailmentType)
+				.map((s) => (100 - (s.ailmentResist?.value || 0)) / 100)
+		);
 
 		//Roll hits
 		const [hits, misses] = _.partition(pierced, ([target, resist]) => {
-			let accuracy = skill.accuracy * accuracyMult;
+			let accuracy = skill.accuracy * accuracyMult * passiveAilmentResist;
 			if (resist == 'Weak') {
 				accuracy = Math.floor(accuracy * 1.5);
 			} else if (resist == 'Strong') {
@@ -580,6 +611,7 @@ export class BattleState {
 			case 'Paralyzed':
 			case 'Charmed':
 			case 'BuffLimitReached':
+			case 'CounterDamage':
 				break;
 			case 'AilmentBlocked':
 			case 'WeaknessHit':
@@ -674,6 +706,8 @@ export class BattleState {
 				return `${result.args.character.displayName} nulled damage!`;
 			case 'DamageDealt':
 				return `${result.args.target.character.displayName} took ${result.args.amount} damage!`;
+			case 'CounterDamage':
+				return `${result.args.target.character.displayName}'s attack was countered by ${result.args.counterer.character.displayName}!`;
 			case 'DamageReflected':
 				return `${result.args.reflector.character.displayName} reflected ${result.args.amount} damage to ${result.args.reciever.character.displayName}`;
 			case 'DamageDrained':
@@ -783,6 +817,7 @@ export type ActionResult =
 				amount: number;
 			};
 	  }
+	| { kind: 'CounterDamage'; args: { target: Combatant; counterer: Combatant } }
 	| { kind: 'HealingDone'; args: TargetResult<number> }
 	| { kind: 'Revived'; args: TargetResult<number> }
 	| { kind: 'AilmentApplied'; args: TargetResult<AilmentType> }

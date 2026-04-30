@@ -17,6 +17,7 @@ export class Character {
 	currentHp: number;
 	currentMp: number;
 	currentAilments: SvelteMap<AilmentType, number>;
+	endurance: number[];
 	dead: boolean;
 	characterClass: CharacterClass;
 	//There needs to be like. the other demon/atma avatar/summoner stuff
@@ -40,13 +41,19 @@ export class Character {
 		this.currentAilments = new SvelteMap();
 		this.dead = $state(false);
 		this.characterClass = $state(classFromCompendiumChar(this.level, compendiumChar));
+		this.endurance = $state([]);
 	}
 
 	//Damage a character
 	damage(amount: number) {
 		this.currentHp = Math.max(0, this.currentHp - amount);
 		if (this.currentHp == 0) {
-			this.dead = true;
+			const endurance = this.endurance.pop();
+			if (endurance) {
+				this.currentHp = endurance * this.stats.hp;
+			} else {
+				this.dead = true;
+			}
 		}
 	}
 	heal(amount: number) {

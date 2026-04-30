@@ -58,15 +58,21 @@ export interface CompendiumAilmentSkill extends BaseCompendiumSkill {
 }
 
 export interface CompendiumPassiveSkill extends BaseCompendiumSkill {
+	//Multiplier to given element
 	elementBoost: null | { element: SMTElement; boost: number };
 	resistMod: null | { element: SMTElement; resist: ResistType }[];
-	hpMod: null | number;
-	mpMod: null | number;
-	pierce: null | SMTElement[];
+	//Multiplier to accuracy and crit
+	accuracyBoost: null | number;
+	critBoost: null | number;
+	hpMod: null | { kind: 'mult' | 'add'; value: number };
+	mpMod: null | { kind: 'mult' | 'add'; value: number };
+	pierce: null | SMTElement[] | 'all';
 	xpBoost: null | number;
 	victoryCry: null | boolean;
 	endure: null | number;
-	counter: null | { chance: number; reflectPercent: number };
+	counter: null | { elements: SMTElement[] | 'all'; chance: number; reflectPercent: number };
+	ailmentResist: null | { element: AilmentType; value: number };
+	quickCleanse: null | boolean;
 }
 
 //TODO: actually implement these

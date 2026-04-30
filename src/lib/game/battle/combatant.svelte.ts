@@ -12,6 +12,9 @@ import {
 import { SvelteMap } from 'svelte/reactivity';
 import type { Side } from './index.svelte';
 import { randomOutcome, withinBounds } from '../calculationUtils';
+import { hasSkills } from '../type_guards';
+import type { CompendiumPassiveSkill } from '../compendium/skill';
+import _ from 'underscore';
 
 export class Combatant {
 	character: Character;
@@ -23,9 +26,35 @@ export class Combatant {
 	tempResistMods = new SvelteMap<SMTElement, [ResistType, EffectDuration]>();
 	tetrakarn = $state(false);
 	makarakarn = $state(false);
+	hasQuickCleanse = false;
 	constructor(character: Character, side: Side) {
 		this.character = $state(character);
 		this.side = side;
+		if (hasSkills(character.characterClass.data)) {
+			character.characterClass.data.skills
+				.filter((s) => s.kind == 'Passive')
+				.forEach((s) => {
+					if (s.skill.resistMod) {
+						s.skill.resistMod.forEach(({ element, resist }) => {
+							this.tempResistMods.set(element, [resist, 'Permanent']);
+						});
+					}
+					if (s.skill.pierce) {
+						if (s.skill.pierce == 'all') {
+							this.pierces.set('all', 'Permanent');
+						} else {
+							s.skill.pierce.forEach((elem) => this.pierces.set(elem, 'Permanent'));
+						}
+					}
+					if (s.skill.endure) {
+						this.character.endurance.push(s.skill.endure);
+					}
+					if (s.skill.quickCleanse) {
+						this.hasQuickCleanse = true;
+					}
+				});
+			this.character.endurance.sort();
+		}
 	}
 
 	handleEndTurn() {
@@ -52,7 +81,7 @@ export class Combatant {
 			.filter(([ailment, _]) => ailmentExpires(ailment))
 			.forEach(([ailment, rounds]) => {
 				const cleanseChance = rounds * 33 + this.character.stats.luck / 2;
-				const cleanses = randomOutcome(cleanseChance);
+				const cleanses = this.hasQuickCleanse || randomOutcome(cleanseChance);
 				if (cleanses) {
 					this.character.removeAilment(ailment);
 				}
@@ -126,5 +155,31 @@ export class Combatant {
 	}
 	canUseItems(): boolean {
 		return true;
+	}
+	getPassives(): CompendiumPassiveSkill[] {
+		if (hasSkills(this.character.characterClass)) {
+			return this.character.characterClass.skills
+				.filter((s) => s.kind == 'Passive')
+				.map((s) => s.skill);
+		}
+		return [];
+	}
+
+	rollCounter(damage: number, element: SMTElement): number | null {
+		const counters: { chance: number; reflectPercent: number }[] = [];
+		this.getPassives().forEach((s) => {
+			if (s.counter && (s.counter.elements == 'all' || _.contains(s.counter.elements, element))) {
+				counters.push(s.counter);
+			}
+		});
+		counters.sort((a, b) => a.chance - b.chance);
+
+		for (let idx = 0; idx < counters.length; idx++) {
+			const counter = counters[idx];
+			if (randomOutcome(counter.chance)) {
+				return damage * (counter.reflectPercent / 100);
+			}
+		}
+		return null;
 	}
 }
