@@ -23,6 +23,7 @@ import {
 	calculateDamage,
 	calculateHeal,
 	CRIT_DAMAGE_MULT,
+	rollAilmentCancel,
 	rollCrit,
 	rollHit
 } from './calculations';
@@ -117,40 +118,71 @@ export class BattleState {
 		}
 	}
 
-	resolveSkill(user: Combatant, skill: CompendiumSkill, targets: Combatant[]) {
-		//TODO: Check for ailment cancels
-		let results;
-		let skillUsed: ActionResult = {
-			kind: 'SkillUsed',
-			args: { target: user, arg: skill.skill.displayName }
-		};
+	//beforeAction(user: Combatant): boolean {}
 
-		try {
-			results = [skillUsed, ...this.calculateSkillResult(user, skill, targets)];
-		} catch (err) {
-			console.error(err);
-			return;
-		}
-		results.forEach((result) => {
-			this.applyActionResult(result);
-		});
-		this.battleLog = [...this.battleLog, ...results.filter((x) => x)];
-		const endsTurn = skill.skill.endsTurn;
+	afterAction(endsTurn: boolean) {
 		const sideSwitch = this.currentPressTurns <= 0;
 		if (sideSwitch || endsTurn) {
 			this.currentCombatant.handleEndTurn();
+			if (this.currentCombatant.character.currentAilments.has('Poison')) {
+				this.applyActionResult({
+					kind: 'DamageDealt',
+					args: {
+						target: this.currentCombatant,
+						resistHit: 'Neutral',
+						amount: this.currentCombatant.character.stats.hp / 10
+					}
+				});
+			}
 		}
 		if (endsTurn && !sideSwitch) {
 			if (this.currentParty().size() != 0) {
 				do {
 					this.currentCombatantTurn = (this.currentCombatantTurn + 1) % this.currentParty().size();
-				} while (this.currentCombatant.character.dead);
-				//TODO: Check for sleeping and if so end their turn
+					if (this.currentCombatant.character.currentAilments.has('Sleep')) {
+						this.applyActionResult({ kind: 'Sleeping', victim: this.currentCombatant });
+						this.applyActionResult({ kind: 'PressTurnMod', amount: 2 });
+					}
+				} while (
+					this.currentCombatant.character.dead &&
+					this.currentCombatant.character.currentAilments.has('Sleep')
+				);
 			}
 		}
 		if (sideSwitch) {
 			this.sideSwitch();
 		}
+	}
+
+	resolveSkill(user: Combatant, skill: CompendiumSkill, targets: Combatant[]) {
+		//TODO: Check for ailment cancels
+
+		let results;
+
+		const ailmentCancel = rollAilmentCancel(
+			new Set(user.character.currentAilments.keys()),
+			user.character.stats.luck
+		);
+		if (ailmentCancel) {
+			results = this.resolveAilmentCancel(user, ailmentCancel);
+		} else {
+			let skillUsed: ActionResult = {
+				kind: 'SkillUsed',
+				args: { target: user, arg: skill.skill.displayName }
+			};
+
+			try {
+				results = [skillUsed, ...this.calculateSkillResult(user, skill, targets)];
+			} catch (err) {
+				console.error(err);
+				return;
+			}
+		}
+		results.forEach((result) => {
+			this.applyActionResult(result);
+		});
+
+		this.afterAction(skill.skill.endsTurn);
 	}
 
 	private calculateSkillResult(
@@ -185,6 +217,26 @@ export class BattleState {
 		//Extra effects probably need special treatment to avoid double counting press turn mods etc;
 		console.debug(results);
 		return results;
+	}
+
+	private resolveAilmentCancel(
+		user: Combatant,
+		ailment: 'Paralyze' | 'Panic' | 'Charm'
+	): ActionResult[] {
+		switch (ailment) {
+			case 'Charm':
+				//Basically choose a random offensive skill against an ally or a random support skill against an enemy
+				return [{ kind: 'Charmed', victim: user }];
+			case 'Paralyze':
+				return [{ kind: 'Paralyzed', victim: user }];
+			case 'Panic':
+				//TODO: actually implement these
+				//Options: random skill - discard money - return to stock/flee // nuthin
+				return [{ kind: 'Panicked', victim: user }];
+
+			default:
+				exhaustGuard(ailment);
+		}
 	}
 
 	private resolveAttack(
@@ -527,6 +579,10 @@ export class BattleState {
 			case 'SkillUsed':
 			case 'SideSwitch':
 			case 'AilmentMissed':
+			case 'Panicked':
+			case 'Sleeping':
+			case 'Paralyzed':
+			case 'Charmed':
 				break;
 			case 'AilmentBlocked':
 			case 'WeaknessHit':
@@ -603,6 +659,7 @@ export class BattleState {
 			default:
 				exhaustGuard(result);
 		}
+		this.battleLog = [...this.battleLog, result];
 	}
 
 	private actionResultToMessage(result: ActionResult): string | null {
@@ -666,6 +723,14 @@ export class BattleState {
 				return `${result.args.target.character.displayName}'s ${result.args.arg.buff} ${lastPart}`;
 			case 'SideSwitch':
 				return `${result.newSide} Turn!`;
+			case 'Charmed':
+				return `${result.victim} is charmed!`;
+			case 'Paralyzed':
+				return `${result.victim} cannot move!`;
+			case 'Sleeping':
+				return `${result.victim} is asleep!`;
+			case 'Panicked':
+				return `${result.victim} is panicking!`;
 			case 'MPSpent':
 			case 'EndsTurn':
 			case 'PressTurnMod':
@@ -754,7 +819,11 @@ export type ActionResult =
 	  }
 	| { kind: 'Smirk'; target: Combatant }
 	| { kind: 'SmirkRemoved'; target: Combatant }
-	| { kind: 'SideSwitch'; newSide: Side };
+	| { kind: 'SideSwitch'; newSide: Side }
+	| { kind: 'Panicked'; victim: Combatant }
+	| { kind: 'Charmed'; victim: Combatant }
+	| { kind: 'Sleeping'; victim: Combatant }
+	| { kind: 'Paralyzed'; victim: Combatant };
 
 export type Side = 'Player' | 'Enemy';
 function flipSide(side: Side) {

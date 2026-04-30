@@ -6,7 +6,7 @@ import type {
 	ResistArray,
 	StatArray
 } from '$lib/game/gameTypes';
-import { SvelteSet } from 'svelte/reactivity';
+import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { withinBounds } from '../calculationUtils';
 import type { CompendiumCharacter } from '../compendium/character';
 import type { CompendiumSkill } from '../compendium/skill';
@@ -23,7 +23,7 @@ export class Character {
 	affinities: AffinityArray;
 	currentHp: number;
 	currentMp: number;
-	currentAilments: SvelteSet<AilmentType>;
+	currentAilments: SvelteMap<AilmentType, number>;
 	dead: boolean;
 	characterClass: CharacterClass;
 	//There needs to be like. the other demon/atma avatar/summoner stuff
@@ -44,7 +44,7 @@ export class Character {
 		this.affinities = $state(compendiumChar.data.baseAffinities);
 		this.currentHp = $state(this.stats.hp);
 		this.currentMp = $state(this.stats.mp);
-		this.currentAilments = new SvelteSet();
+		this.currentAilments = new SvelteMap();
 		this.dead = $state(false);
 		this.characterClass = $state(classFromCompendiumChar(this.level, compendiumChar));
 	}
@@ -68,7 +68,7 @@ export class Character {
 		}
 	}
 	addAilment(ailment: AilmentType) {
-		this.currentAilments.add(ailment);
+		this.currentAilments.set(ailment, 0);
 	}
 
 	removeAilment(ailment: AilmentType) {
@@ -89,5 +89,3 @@ function classFromCompendiumChar(
 			return { kind: 'Demon', data: demonClassFromCompendium(level, compendiumChar.data) };
 	}
 }
-
-

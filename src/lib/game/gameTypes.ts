@@ -1,3 +1,4 @@
+import { exhaustGuard } from '$lib/utils';
 import _ from 'underscore';
 
 export interface StatArray {
@@ -31,6 +32,7 @@ export interface ResistArray {
 	poison: ResistType;
 	sick: ResistType;
 	sleep: ResistType;
+	paralyze: ResistType;
 }
 
 //Used for temp resistance overrides, makes the ergonomics slightly nicer
@@ -55,6 +57,7 @@ export interface NullableResistArray {
 	poison: ResistType | null;
 	sick: ResistType | null;
 	sleep: ResistType | null;
+	paralyze: ResistType | null;
 }
 export const NULL_RESIST_ARRAY = {
 	phys: null,
@@ -78,7 +81,7 @@ export const NULL_RESIST_ARRAY = {
 	sleep: null
 };
 
-export function resistArrayGet(resists: ResistArray, elem: SMTElement) {
+export function resistArrayGet(resists: ResistArray, elem: SMTElement): ResistType {
 	switch (elem) {
 		case 'Phys':
 			return resists.phys;
@@ -102,8 +105,6 @@ export function resistArrayGet(resists: ResistArray, elem: SMTElement) {
 			return resists.recovery;
 		case 'Support':
 			return resists.support;
-		case 'Bind':
-			return resists.bind;
 		case 'Charm':
 			return resists.charm;
 		case 'Daze':
@@ -118,6 +119,10 @@ export function resistArrayGet(resists: ResistArray, elem: SMTElement) {
 			return resists.sick;
 		case 'Sleep':
 			return resists.sleep;
+		case 'Paralyze':
+			return resists.paralyze;
+		default:
+			exhaustGuard(elem);
 	}
 }
 
@@ -253,8 +258,8 @@ export type SMTElement =
 	| 'Force'
 	| 'Light'
 	| 'Dark'
-	| 'Bind'
 	| 'Charm'
+	| 'Paralyze'
 	| 'Daze'
 	| 'Mute'
 	| 'Panic'
@@ -266,14 +271,29 @@ export type SMTElement =
 	| 'Support';
 
 export type AilmentType =
-	| 'Bind'
 	| 'Charm'
 	| 'Daze'
 	| 'Mute'
 	| 'Panic'
 	| 'Poison'
 	| 'Sick'
-	| 'Sleep';
+	| 'Sleep'
+	| 'Paralyze';
+
+export function ailmentExpires(ailment: AilmentType): boolean {
+	switch (ailment) {
+		case 'Charm':
+		case 'Sleep':
+		case 'Daze':
+		case 'Mute':
+		case 'Panic':
+			return true;
+		case 'Paralyze':
+		case 'Sick':
+		case 'Poison':
+			return false;
+	}
+}
 
 export type BuffType = 'Attack' | 'Defence' | 'Accuracy' | 'Evasion';
 
@@ -293,7 +313,7 @@ export function elementToElementType(elem: SMTElement): ElementType {
 		case 'Dark':
 		case 'Almighty':
 			return 'Offensive';
-		case 'Bind':
+		case 'Paralyze':
 		case 'Charm':
 		case 'Daze':
 		case 'Mute':
@@ -306,6 +326,8 @@ export function elementToElementType(elem: SMTElement): ElementType {
 			return 'Recovery';
 		case 'Support':
 			return 'Support';
+		default:
+			exhaustGuard(elem);
 	}
 }
 

@@ -1,8 +1,9 @@
 import { meanOfArray, randomArbitrary, randomOutcome } from '$lib/game/calculationUtils';
-import type { StatArray } from '$lib/game/gameTypes';
+import type { AilmentType, StatArray } from '$lib/game/gameTypes';
 import { type Side } from '$lib/game/battle/index.svelte';
 import type { Party } from '$lib/game/battle/party.svelte';
 import { random } from 'underscore';
+import type { SvelteSet } from 'svelte/reactivity';
 
 //Player acts first chance = 50 + (Mean(agility of all player combatants) - Mean(agility of all enemy combatants)) %
 export function actsFirst(playerParty: Party, enemyParty: Party): Side {
@@ -55,6 +56,20 @@ export function rollHit(
 export function rollCrit(critRate: number, attackerLuck: number, defenderLuck: number): boolean {
 	const chance = critRate * (1 + (attackerLuck - defenderLuck) / 50);
 	return randomOutcome(chance);
+}
+
+export function rollAilmentCancel(
+	ailments: Set<AilmentType>,
+	victimLuck: number
+): 'Paralyze' | 'Panic' | 'Charm' | null {
+	if (ailments.has('Paralyze')) {
+		return randomOutcome(33 + victimLuck / 2) ? 'Paralyze' : null;
+	} else if (ailments.has('Panic')) {
+		return randomOutcome(33 + victimLuck / 2) ? 'Panic' : null;
+	} else if (ailments.has('Charm')) {
+		return randomOutcome(33 + victimLuck / 2) ? 'Charm' : null;
+	}
+	return null;
 }
 
 export const CRIT_DAMAGE_MULT = 1.5;

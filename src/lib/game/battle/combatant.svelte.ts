@@ -1,8 +1,10 @@
 import type { Character } from '$lib/game/character/index.svelte';
 import {
+	ailmentExpires,
 	NEUTRAL_BUFF_ARRAY,
 	NULL_RESIST_ARRAY,
 	resistArrayGet,
+	type AilmentType,
 	type BuffArray,
 	type BuffType,
 	type EffectDuration,
@@ -12,7 +14,7 @@ import {
 } from '$lib/game/gameTypes';
 import { SvelteMap } from 'svelte/reactivity';
 import type { Side } from './index.svelte';
-import { withinBounds } from '../calculationUtils';
+import { randomOutcome, withinBounds } from '../calculationUtils';
 
 export class Combatant {
 	character: Character;
@@ -49,6 +51,16 @@ export class Combatant {
 			}
 		});
 		//TODO: Ailment cleanse rolls, poison damage
+		this.character.currentAilments
+			.entries()
+			.filter(([ailment, _]) => ailmentExpires(ailment))
+			.forEach(([ailment, rounds]) => {
+				const cleanseChance = rounds * 33 + this.character.stats.luck / 2;
+				const cleanses = randomOutcome(cleanseChance);
+				if (cleanses) {
+					this.character.removeAilment(ailment);
+				}
+			});
 	}
 
 	getResist(elem: SMTElement): ResistType {
