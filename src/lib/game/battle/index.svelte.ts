@@ -248,17 +248,21 @@ export class BattleState {
 		const physAttack: boolean = skill.element == 'Phys' || skill.element == 'Gun';
 
 		const passives = attacker.getPassives();
-		const damageMult = productOfArray(
-			passives
-				.filter((passive) => passive.elementBoost && passive.elementBoost.element == skill.element)
-				.map((s) => s.elementBoost?.boost || 1)
-		);
+		const damageMult =
+			productOfArray(
+				passives
+					.filter(
+						(passive) => passive.elementBoost && passive.elementBoost.element == skill.element
+					)
+					.map((s) => s.elementBoost?.boost || 1)
+			) * (attacker.character.currentAilments.has('Sick') ? 0.25 : 1);
 		const critMult = productOfArray(passives.map((s) => s.critBoost || 1));
 		const accuracyMult = productOfArray(passives.map((s) => s.accuracyBoost || 1));
+		const ailmentAccuracyMult = attacker.character.currentAilments.has('Daze') ? 0.25 : 1;
 
 		const [hits, misses] = _.partition(targets, (target: Combatant) =>
 			rollHit(
-				skill.accuracy * accuracyMult,
+				skill.accuracy * accuracyMult * ailmentAccuracyMult,
 				attacker.character.stats.agility,
 				target.character.stats.agility,
 				buffToBuffMult(attacker.buffLevels, target.buffLevels, 'Accuracy')
