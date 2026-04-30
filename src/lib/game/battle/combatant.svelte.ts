@@ -2,13 +2,10 @@ import type { Character } from '$lib/game/character/index.svelte';
 import {
 	ailmentExpires,
 	NEUTRAL_BUFF_ARRAY,
-	NULL_RESIST_ARRAY,
 	resistArrayGet,
-	type AilmentType,
 	type BuffArray,
 	type BuffType,
 	type EffectDuration,
-	type NullableResistArray,
 	type ResistType,
 	type SMTElement
 } from '$lib/game/gameTypes';
@@ -50,7 +47,6 @@ export class Combatant {
 				}
 			}
 		});
-		//TODO: Ailment cleanse rolls, poison damage
 		this.character.currentAilments
 			.entries()
 			.filter(([ailment, _]) => ailmentExpires(ailment))

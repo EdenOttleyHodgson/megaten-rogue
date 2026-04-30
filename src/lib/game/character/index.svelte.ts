@@ -1,15 +1,8 @@
 import { getCompendium } from '$lib/game/compendium';
-import type {
-	AffinityArray,
-	AilmentType,
-	CharacterType,
-	ResistArray,
-	StatArray
-} from '$lib/game/gameTypes';
-import { SvelteMap, SvelteSet } from 'svelte/reactivity';
+import type { AffinityArray, AilmentType, ResistArray, StatArray } from '$lib/game/gameTypes';
+import { SvelteMap } from 'svelte/reactivity';
 import { withinBounds } from '../calculationUtils';
 import type { CompendiumCharacter } from '../compendium/character';
-import type { CompendiumSkill } from '../compendium/skill';
 import { demonClassFromCompendium, type DemonClass } from './demon.svelte';
 
 //This is an instance of a compendium character

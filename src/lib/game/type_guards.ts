@@ -1,7 +1,5 @@
 import type { CompendiumSkill } from './compendium/skill';
-import type { CharacterClass } from './character/index.svelte';
 import type { CompendiumTargeting } from './gameTypes';
-import type { CompendiumItem } from './compendium';
 
 interface SkillClass {
 	skills: CompendiumSkill[];

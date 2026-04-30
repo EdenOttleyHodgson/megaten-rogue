@@ -11,6 +11,7 @@ import {
 	affinityEffectMult,
 	buffToBuffMult,
 	getAffinityEffects,
+	getBuff,
 	type AilmentType,
 	type BuffType,
 	type CompendiumTargeting,
@@ -29,7 +30,7 @@ import {
 } from './calculations';
 import type { Combatant } from './combatant.svelte';
 import type { Party } from './party.svelte';
-import _, { partition } from 'underscore';
+import _ from 'underscore';
 
 export class BattleState {
 	playerParty: Party;
@@ -86,7 +87,6 @@ export class BattleState {
 
 	//Checks if skill can be used
 	canUseSkill(user: Combatant, skill: CompendiumSkill): boolean {
-		//TODO
 		return (
 			user.character.currentMp >= skill.skill.mpCost && !user.character.currentAilments.has('Mute')
 		);
@@ -155,8 +155,6 @@ export class BattleState {
 	}
 
 	resolveSkill(user: Combatant, skill: CompendiumSkill, targets: Combatant[]) {
-		//TODO: Check for ailment cancels
-
 		let results;
 
 		const ailmentCancel = rollAilmentCancel(
@@ -190,10 +188,8 @@ export class BattleState {
 		skill: CompendiumSkill,
 		targets: Combatant[]
 	): ActionResult[] {
-		//TODO
 		const results = new Array<ActionResult>();
-		// Dispatch based on skill type
-		// handle extra effects
+		//TODO: random target allocation
 		switch (skill.kind) {
 			case 'Attack':
 				results.push(...this.resolveAttack(skill.skill, user, targets));
@@ -583,6 +579,7 @@ export class BattleState {
 			case 'Sleeping':
 			case 'Paralyzed':
 			case 'Charmed':
+			case 'BuffLimitReached':
 				break;
 			case 'AilmentBlocked':
 			case 'WeaknessHit':
@@ -721,6 +718,10 @@ export class BattleState {
 					lastPart = `was increased ${Math.abs(result.args.arg.amount)} stages!`;
 				}
 				return `${result.args.target.character.displayName}'s ${result.args.arg.buff} ${lastPart}`;
+			case 'BuffLimitReached':
+				const direction =
+					getBuff(result.target.buffLevels, result.buffType) < 0 ? 'decreased' : 'increased';
+				return `${result.target.character.displayName}'s ${result.buffType} cannot be ${direction} further!`;
 			case 'SideSwitch':
 				return `${result.newSide} Turn!`;
 			case 'Charmed':
@@ -769,7 +770,6 @@ export class BattleState {
 //Type alias for a target, and an amount
 type TargetResult<T> = { target: Combatant; arg: T };
 
-//TODO: Ailment skip results, buff no effects
 export type ActionResult =
 	| { kind: 'EndsTurn' }
 	| { kind: 'PressTurnMod'; amount: number }
@@ -823,7 +823,8 @@ export type ActionResult =
 	| { kind: 'Panicked'; victim: Combatant }
 	| { kind: 'Charmed'; victim: Combatant }
 	| { kind: 'Sleeping'; victim: Combatant }
-	| { kind: 'Paralyzed'; victim: Combatant };
+	| { kind: 'Paralyzed'; victim: Combatant }
+	| { kind: 'BuffLimitReached'; target: Combatant; buffType: BuffType };
 
 export type Side = 'Player' | 'Enemy';
 function flipSide(side: Side) {

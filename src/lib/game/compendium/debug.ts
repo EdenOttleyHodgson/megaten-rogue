@@ -1,5 +1,5 @@
 import { Compendium } from '$lib/game/compendium';
-import type { CompendiumDemon, CompendiumCharacter } from '$lib/game/compendium/character';
+import type { CompendiumCharacter } from '$lib/game/compendium/character';
 import type { CompendiumSkill } from '$lib/game/compendium/skill';
 
 const DEBUG_DEMON: CompendiumCharacter = {
@@ -32,6 +32,7 @@ const DEBUG_DEMON: CompendiumCharacter = {
 			almighty: 'Neutral',
 			recovery: 'Neutral',
 			support: 'Neutral',
+			paralyze: 'Neutral',
 			bind: 'Neutral',
 			charm: 'Neutral',
 			daze: 'Neutral',

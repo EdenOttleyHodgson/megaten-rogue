@@ -248,6 +248,18 @@ export const NEUTRAL_BUFF_ARRAY = {
 	accuracy: 0,
 	evasion: 0
 };
+export function getBuff(arr: BuffArray, buff: BuffType): number {
+	switch (buff) {
+		case 'Attack':
+			return arr.attack;
+		case 'Defence':
+			return arr.defence;
+		case 'Accuracy':
+			return arr.accuracy;
+		case 'Evasion':
+			return arr.evasion;
+	}
+}
 
 export type SMTElement =
 	| 'Phys'
