@@ -21,13 +21,13 @@ export interface BaseCompendiumSkill extends CompendiumItem {
 	mpCost: number;
 	targeting: CompendiumTargeting;
 	endsTurn: boolean;
+	hits: number;
 	//extraEffects: string[] | CompendiumSkill[]; This needs a rethonk
 }
 
 export interface CompendiumAttackSkill extends BaseCompendiumSkill {
 	element: SMTElement;
 	power: number;
-	hits: number;
 	accuracy: number;
 	critRate: number;
 }

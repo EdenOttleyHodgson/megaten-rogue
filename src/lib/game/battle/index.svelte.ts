@@ -7,7 +7,7 @@ import type {
 	CompendiumSupportSkill
 } from '$lib/game/compendium/skill';
 import { exhaustGuard } from '$lib/utils';
-import { productOfArray } from '../calculationUtils';
+import { getRandomIntegerInclusive, productOfArray } from '../calculationUtils';
 import {
 	affinityEffectMult,
 	buffToBuffMult,
@@ -156,7 +156,7 @@ export class BattleState {
 	}
 
 	resolveSkill(user: Combatant, skill: CompendiumSkill, targets: Combatant[]) {
-		let results;
+		let results: ActionResult[] = [];
 
 		const ailmentCancel = rollAilmentCancel(
 			new Set(user.character.currentAilments.keys()),
@@ -169,9 +169,33 @@ export class BattleState {
 				kind: 'SkillUsed',
 				args: { target: user, arg: skill.skill.displayName }
 			};
-
+			results = [skillUsed];
 			try {
-				results = [skillUsed, ...this.calculateSkillResult(user, skill, targets)];
+				let actualPressTurnMod = 2;
+				for (let i = 0; i < skill.skill.hits; i++) {
+					if (skill.skill.targeting == 'RandomAllies') {
+						targets = [this.getPartyForSide(user.side).getRandomCombatant()];
+					} else if (skill.skill.targeting == 'RandomEnemies') {
+						targets = [this.getPartyForSide(flipSide(user.side)).getRandomCombatant()];
+					}
+					const { results: nextResults, pressTurnMod } = this.calculateSkillResult(
+						user,
+						skill,
+						targets
+					);
+					if (actualPressTurnMod == 2) {
+						actualPressTurnMod = pressTurnMod;
+					} else if (actualPressTurnMod == 1) {
+						if (pressTurnMod > 2) {
+							actualPressTurnMod = pressTurnMod;
+						}
+					} else if (actualPressTurnMod > 2) {
+						actualPressTurnMod = Math.max(actualPressTurnMod, pressTurnMod);
+					}
+					results = [...results, ...nextResults];
+				}
+				results.push({ kind: 'MPSpent', args: { target: user, arg: skill.skill.mpCost } });
+				results.push({ kind: 'PressTurnMod', amount: actualPressTurnMod });
 			} catch (err) {
 				console.error(err);
 				return;
@@ -188,32 +212,25 @@ export class BattleState {
 		user: Combatant,
 		skill: CompendiumSkill,
 		targets: Combatant[]
-	): ActionResult[] {
-		const results = new Array<ActionResult>();
+	): { results: ActionResult[]; pressTurnMod: number } {
 		//TODO: random target allocation
 		switch (skill.kind) {
 			case 'Attack':
-				results.push(...this.resolveAttack(skill.skill, user, targets));
-				break;
+				return this.resolveAttack(skill.skill, user, targets);
 			case 'Ailment':
-				results.push(...this.resolveAilment(skill.skill, user, targets));
-				break;
+				return this.resolveAilment(skill.skill, user, targets);
 			case 'Support':
-				results.push(...this.resolveSupport(skill.skill, user, targets));
-				break;
+				return this.resolveSupport(skill.skill, user, targets);
 			case 'Passive':
-				console.error("Can't use a passive!");
-				break;
+				throw Error("Can't use a passive!");
 			case 'Recovery':
-				results.push(...this.resolveRecovery(skill.skill, user, targets));
-				break;
+				return this.resolveRecovery(skill.skill, user, targets);
 			case 'special':
-				results.push(...this.resolveSpecial(skill.skill, user, targets));
-				break;
+				return this.resolveSpecial(skill.skill, user, targets);
+			default:
+				exhaustGuard(skill);
 		}
 		//Extra effects probably need special treatment to avoid double counting press turn mods etc;
-		console.debug(results);
-		return results;
 	}
 
 	private resolveAilmentCancel(
@@ -240,7 +257,7 @@ export class BattleState {
 		skill: CompendiumAttackSkill,
 		attacker: Combatant,
 		targets: Combatant[]
-	): ActionResult[] {
+	): { results: ActionResult[]; pressTurnMod: number } {
 		let failPressTurnMod = 0;
 		let critFlag = false;
 		const results = new Array<ActionResult>();
@@ -434,21 +451,19 @@ export class BattleState {
 			})
 		);
 
+		let pressTurnMod = 2;
 		if (failPressTurnMod > 0) {
-			results.push({ kind: 'PressTurnMod', amount: failPressTurnMod });
+			pressTurnMod = failPressTurnMod;
 		} else if (critFlag) {
-			results.push({ kind: 'PressTurnMod', amount: 1 });
-		} else {
-			results.push({ kind: 'PressTurnMod', amount: 2 });
-		}
-		//
-		return results;
+			pressTurnMod = 1;
+		} //
+		return { results, pressTurnMod };
 	}
 	private resolveAilment(
 		skill: CompendiumAilmentSkill,
 		user: Combatant,
 		targets: Combatant[]
-	): ActionResult[] {
+	): { results: ActionResult[]; pressTurnMod: number } {
 		const results = new Array<ActionResult>();
 		let weakFlag = false;
 		let failPressTurnMod = 0;
@@ -467,8 +482,6 @@ export class BattleState {
 		blocked.forEach(([target, _]) => {
 			results.push({ kind: 'AilmentBlocked', target: target });
 		});
-
-		//TODO: Get passive mods
 
 		const passives = user.getPassives();
 		const accuracyMult = productOfArray(
@@ -507,21 +520,19 @@ export class BattleState {
 			results.push({ kind: 'AilmentApplied', args: { arg: skill.ailmentType, target } })
 		);
 		//apply ailments
+		let pressTurnMod = 2;
 		if (failPressTurnMod > 0) {
-			results.push({ kind: 'PressTurnMod', amount: failPressTurnMod });
+			pressTurnMod = failPressTurnMod;
 		} else if (weakFlag) {
-			results.push({ kind: 'PressTurnMod', amount: 1 });
-		} else {
-			results.push({ kind: 'PressTurnMod', amount: 2 });
-		}
-
-		return results;
+			pressTurnMod = 1;
+		} //
+		return { results, pressTurnMod };
 	}
 	private resolveSupport(
 		skill: CompendiumSupportSkill,
 		user: Combatant,
 		targets: Combatant[]
-	): ActionResult[] {
+	): { results: ActionResult[]; pressTurnMod: number } {
 		const results = new Array<ActionResult>();
 		targets.forEach((target) => {
 			if (skill.dekaja) {
@@ -563,13 +574,13 @@ export class BattleState {
 			}
 		});
 
-		return results;
+		return { results, pressTurnMod: 2 };
 	}
 	private resolveRecovery(
 		skill: CompendiumRecoverySkill,
 		user: Combatant,
 		targets: Combatant[]
-	): ActionResult[] {
+	): { results: ActionResult[]; pressTurnMod: number } {
 		const results: ActionResult[] = [];
 		targets.forEach((target) => {
 			if (skill.revives) {
@@ -594,14 +605,14 @@ export class BattleState {
 				});
 			}
 		});
-		return results;
+		return { results, pressTurnMod: 2 };
 	}
 	private resolveSpecial(
 		skill: CompendiumSpecialSkill,
 		user: Combatant,
 		targets: Combatant[]
-	): ActionResult[] {
-		return [];
+	): { results: ActionResult[]; pressTurnMod: number } {
+		return { results: [], pressTurnMod: 2 };
 	}
 	//Take the result of an action and use it to modify the state of the battle.
 	//All actions return an action result. This allows for skill resolution to abort if something errors.
@@ -789,13 +800,13 @@ export class BattleState {
 					throw Error('No target given to resolve targets when it is needed');
 				}
 			case 'AllAllies':
-				[...this.playerParty.combatants];
+				return this.getPartyForSide(this.currentCombatant.side).combatants;
 			case 'AllEnemies':
-				[...this.enemyParty.combatants];
+				return this.getPartyForSide(flipSide(this.currentCombatant.side)).combatants;
 			case 'RandomAllies':
-				throw Error('This needs a rethink');
+				return [];
 			case 'RandomEnemies':
-				throw Error('This needs a rethink');
+				return [];
 			case 'Everyone':
 				return [...this.playerParty.combatants, ...this.enemyParty.combatants];
 

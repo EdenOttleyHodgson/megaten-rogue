@@ -34,66 +34,17 @@
 			<Party party={battle.enemyParty} {onCombatantClick}></Party>
 		</div>
 	</div>
-	<div class="flex flex-col">
-		<button class="border" onclick={() => battle.damageTest()}>Damage Test</button>
-		{#if debugFlames}
-			<button
-				class="border"
-				onclick={() =>
-					battle.resolveSkill(battle.playerParty.combatants[0], debugFlames, [
-						battle.enemyParty.combatants[0]
-					])}>Debug Flames Test</button
-			>
-
-			<button
-				class="border"
-				onclick={() =>
-					console.log(
-						battle.resolveSkill(battle.playerParty.combatants[0], debugFlames, [
-							battle.enemyParty.combatants[0]
-						])
-					)}
-			>
-				button
-			</button>
-			<!-- content here -->
-		{/if}
-		{#if debugPoison}
-			<button
-				class="border"
-				onclick={() => {
-					battle.resolveSkill(battle.playerParty.combatants[0], debugPoison, [
-						battle.enemyParty.combatants[0]
-					]);
-				}}
-			>
-				Debug Poison Test
-			</button>
-		{/if}
-		{#if debugHeal}
-			<button
-				class="border-1"
-				onclick={() => {
-					battle.resolveSkill(battle.playerParty.combatants[0], debugHeal, [
-						battle.enemyParty.combatants[0]
-					]);
-				}}>Debug Heal Test</button
-			>
-		{/if}
-
-		<button onclick={() => console.log($state.snapshot(test))}>Log Test</button>
-		<div>
-			<ControlBar
-				onSkillUse={(skill, target) => {
-					const targets = battle.resolveTargets(skill.skill.targeting, target);
-					battle.resolveSkill(battle.currentCombatant, skill, targets);
-					selectedTarget = null;
-				}}
-				currentCombatant={battle.currentCombatant}
-				{selectedTarget}
-				clearSelection={() => (selectedTarget = null)}
-			></ControlBar>
-		</div>
-		<!-- bottom -->
+	<div>
+		<ControlBar
+			onSkillUse={(skill, target) => {
+				const targets = battle.resolveTargets(skill.skill.targeting, target);
+				battle.resolveSkill(battle.currentCombatant, skill, targets);
+				selectedTarget = null;
+			}}
+			currentCombatant={battle.currentCombatant}
+			{selectedTarget}
+			clearSelection={() => (selectedTarget = null)}
+		></ControlBar>
 	</div>
+	<!-- bottom -->
 </div>

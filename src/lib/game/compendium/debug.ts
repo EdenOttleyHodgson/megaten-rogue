@@ -21,7 +21,7 @@ const DEBUG_DEMON: CompendiumCharacter = {
 			luck: 10
 		},
 		baseResists: {
-			phys: 'Neutral',
+			phys: 'Weak',
 			gun: 'Neutral',
 			fire: 'Neutral',
 			ice: 'Neutral',
@@ -65,9 +65,28 @@ const DEBUG_DEMON: CompendiumCharacter = {
 		},
 		skills: [
 			{ level: 0, skill_id: 'debug.skills.debugFlames' },
-			{ level: 11, skill_id: 'debug.skills.debugHeal' },
-			{ level: 11, skill_id: 'debug.skills.debugAilment' }
+			{ level: 0, skill_id: 'debug.skills.debugHeal' },
+			{ level: 0, skill_id: 'debug.skills.debugAilment' },
+			{ level: 0, skill_id: 'debug.skills.debugStrike' },
+			{ level: 0, skill_id: 'debug.skills.debugSupport' },
+			{ level: 0, skill_id: 'debug.skills.theSkillThatNormallyMisses' }
 		]
+	}
+};
+
+const DEBUG_STRIKE: CompendiumSkill = {
+	kind: 'Attack',
+	skill: {
+		id: 'debug.skills.debugStrike',
+		displayName: 'Debug Strike',
+		element: 'Phys',
+		mpCost: 10,
+		targeting: 'AllEnemies',
+		endsTurn: true,
+		power: 100,
+		hits: 2,
+		accuracy: 80,
+		critRate: 10
 	}
 };
 
@@ -98,7 +117,8 @@ const DEBUG_HEAL: CompendiumSkill = {
 		healPercent: 20,
 		revives: null,
 		ailmentsCleansed: null,
-		endsTurn: true
+		endsTurn: true,
+		hits: 1
 		//		extraEffects: []
 	}
 };
@@ -111,12 +131,60 @@ const DEBUG_AILMENT: CompendiumSkill = {
 		targeting: 'OneEnemy',
 		ailmentType: 'Poison',
 		accuracy: 75,
-		endsTurn: true
+		endsTurn: true,
+		hits: 1
 		//		extraEffects: []
 	}
 };
 
-const DEBUG_SKILLS = [DEBUG_FLAMES, DEBUG_HEAL, DEBUG_AILMENT];
+const DEBUG_SUPPORT: CompendiumSkill = {
+	kind: 'Support',
+	skill: {
+		id: 'debug.skills.debugSupport',
+		displayName: 'Debug Support',
+		mpCost: 10,
+		targeting: 'Everyone',
+		endsTurn: true,
+		hits: 1,
+		buffMods: [
+			['Attack', 3],
+			['Evasion', 6]
+		],
+		dekaja: null,
+		dekunda: null,
+		concentrate: null,
+		smileCharge: null,
+		tetrakarn: null,
+		makarakarn: null,
+		doping: null,
+		pierce: null,
+		tetrabreak: null,
+		makarabreak: null
+	}
+};
+const THE_SKILL_THAT_NORMALLY_MISSES: CompendiumSkill = {
+	kind: 'Attack',
+	skill: {
+		id: 'debug.skills.theSkillThatNormallyMisses',
+		displayName: 'The Skill That Normally Misses',
+		element: 'Phys',
+		mpCost: 10,
+		targeting: 'AllEnemies',
+		endsTurn: true,
+		power: 100,
+		hits: 1,
+		accuracy: 1,
+		critRate: 10
+	}
+};
+const DEBUG_SKILLS = [
+	DEBUG_FLAMES,
+	DEBUG_HEAL,
+	DEBUG_AILMENT,
+	DEBUG_STRIKE,
+	DEBUG_SUPPORT,
+	THE_SKILL_THAT_NORMALLY_MISSES
+];
 
 const DEBUG_CHARACTERS = [DEBUG_DEMON];
 

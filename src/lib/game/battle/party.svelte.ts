@@ -1,4 +1,5 @@
 import type { StatArray } from '$lib/game/gameTypes';
+import { getRandomIntegerInclusive } from '../calculationUtils';
 import type { Combatant } from './combatant.svelte';
 
 export class Party {
@@ -18,4 +19,8 @@ export class Party {
 	public size(): number {
 		return this.combatants.filter((x) => !x.character.dead).length;
 	}
+	public getRandomCombatant(): Combatant {
+		return this.combatants[getRandomIntegerInclusive(0, this.combatants.length - 1)]
+	}
+
 }

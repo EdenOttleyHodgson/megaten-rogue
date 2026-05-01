@@ -47,7 +47,8 @@ export function rollHit(
 	defenderAgi: number,
 	buffMult: number
 ): boolean {
-	const chance = skillAccuracy * (100 + (attackerAgi - defenderAgi) / 2 / 100) * buffMult;
+	const chance = skillAccuracy * (1 + (attackerAgi - defenderAgi) / 2 / 100) * buffMult;
+	console.log(chance);
 	return randomOutcome(chance);
 }
 

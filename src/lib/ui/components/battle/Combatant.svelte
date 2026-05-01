@@ -39,5 +39,9 @@
 				<!-- content here -->
 			{/each}
 		</ul>
+		<div>
+			{combatant.buffLevels.attack}/{combatant.buffLevels.defence}/{combatant.buffLevels
+				.accuracy}/{combatant.buffLevels.evasion}
+		</div>
 	</div>
 </div>
