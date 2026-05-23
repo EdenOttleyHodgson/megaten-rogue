@@ -27,6 +27,7 @@ export class Combatant {
 	tetrakarn = $state(false);
 	makarakarn = $state(false);
 	hasQuickCleanse = false;
+	ai: AI;
 	constructor(character: Character, side: Side) {
 		this.character = $state(character);
 		this.side = side;

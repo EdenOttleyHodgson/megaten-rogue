@@ -16,7 +16,6 @@ export type CompendiumSkill =
 	| { kind: 'Passive'; skill: CompendiumPassiveSkill }
 	| { kind: 'special'; skill: CompendiumSpecialSkill };
 
-//TODO: Multihits
 export interface BaseCompendiumSkill extends CompendiumItem {
 	mpCost: number;
 	targeting: CompendiumTargeting;

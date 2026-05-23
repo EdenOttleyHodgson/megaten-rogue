@@ -213,7 +213,6 @@ export class BattleState {
 		skill: CompendiumSkill,
 		targets: Combatant[]
 	): { results: ActionResult[]; pressTurnMod: number } {
-		//TODO: random target allocation
 		switch (skill.kind) {
 			case 'Attack':
 				return this.resolveAttack(skill.skill, user, targets);
@@ -825,13 +824,13 @@ export type ActionResult =
 	| { kind: 'MPSpent'; args: TargetResult<number> }
 	| { kind: 'SkillUsed'; args: TargetResult<string> }
 	| {
-			kind: 'DamageDealt';
-			args: {
-				target: Combatant;
-				resistHit: 'Weak' | 'Neutral' | 'Strong' | 'Crit';
-				amount: number;
-			};
-	  }
+		kind: 'DamageDealt';
+		args: {
+			target: Combatant;
+			resistHit: 'Weak' | 'Neutral' | 'Strong' | 'Crit';
+			amount: number;
+		};
+	}
 	| { kind: 'CounterDamage'; args: { target: Combatant; counterer: Combatant } }
 	| { kind: 'HealingDone'; args: TargetResult<number> }
 	| { kind: 'Revived'; args: TargetResult<number> }
@@ -844,29 +843,29 @@ export type ActionResult =
 	| { kind: 'WeaknessHit'; args: Combatant }
 	| { kind: 'Critical'; args: Combatant }
 	| {
-			kind: 'DamageReflected';
-			args: { reflector: Combatant; reciever: Combatant; amount: number };
-	  }
+		kind: 'DamageReflected';
+		args: { reflector: Combatant; reciever: Combatant; amount: number };
+	}
 	| { kind: 'DamageDrained'; args: TargetResult<number> }
 	| { kind: 'DamageNulled'; args: Combatant }
 	| { kind: 'Dekaja'; target: Combatant }
 	| { kind: 'Dekunda'; target: Combatant }
 	| {
-			kind: 'PierceCharge';
-			target: Combatant;
-			elements: SMTElement[] | 'all';
-			duration: EffectDuration;
-	  }
+		kind: 'PierceCharge';
+		target: Combatant;
+		elements: SMTElement[] | 'all';
+		duration: EffectDuration;
+	}
 	| { kind: 'Tetrakarn'; target: Combatant }
 	| { kind: 'Makarakarn'; target: Combatant }
 	| { kind: 'Tetrabreak'; target: Combatant }
 	| { kind: 'Makarabreak'; target: Combatant }
 	| { kind: 'Concentrate'; args: TargetResult<number> }
 	| {
-			kind: 'ResistanceChange';
-			target: Combatant;
-			resists: { element: SMTElement; resistType: ResistType; duration: EffectDuration }[];
-	  }
+		kind: 'ResistanceChange';
+		target: Combatant;
+		resists: { element: SMTElement; resistType: ResistType; duration: EffectDuration }[];
+	}
 	| { kind: 'Smirk'; target: Combatant }
 	| { kind: 'SmirkRemoved'; target: Combatant }
 	| { kind: 'SideSwitch'; newSide: Side }
