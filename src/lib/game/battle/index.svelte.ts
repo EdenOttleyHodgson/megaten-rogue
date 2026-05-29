@@ -7,7 +7,8 @@ import type {
 	CompendiumSupportSkill
 } from '$lib/game/compendium/skill';
 import { exhaustGuard } from '$lib/utils';
-import { getRandomIntegerInclusive, productOfArray } from '../calculationUtils';
+import type { AIAction, AIChoice, AIConditionExpr, CombatAI } from '../ai/aiScriptAST';
+import { getRandomIntegerInclusive, productOfArray, sumArray } from '../calculationUtils';
 import {
 	affinityEffectMult,
 	buffToBuffMult,
@@ -84,6 +85,57 @@ export class BattleState {
 
 	damageTest() {
 		this.playerParty.combatants[0].character.damage(1);
+	}
+
+	evaluateAICondition(condition: true | AIConditionExpr): boolean {
+		if (condition === true) {
+			return true;
+		}
+		//TODO: This
+		return false;
+	}
+
+	chooseAIAction(ai: CombatAI): AIAction[] {
+		let choice: AIChoice | undefined;
+		ai.choiceBrackets.forEach((bracket) => {
+			const filteredBracket = bracket.filter((x) => this.evaluateAICondition(x.choice.condition))
+			if (choice) {
+				return;
+			}
+			if (filteredBracket.length == 0) {
+				return;
+			} else if (filteredBracket.length == 1) {
+				choice = filteredBracket[0].choice
+				return;
+			}
+			const totalWeighting = sumArray(filteredBracket.map((x) => x.weighting))
+			let weightingAcc = 0;
+			const chances = filteredBracket.map((choice) => {
+				const chance = choice.weighting / totalWeighting
+				weightingAcc += chance
+				return { chanceBound: weightingAcc, action: choice }
+			}
+			)
+			const roll = Math.random()
+			let chosenChoice: AIChoice | null = null;
+			chances.forEach((x) => {
+				if (roll < x.chanceBound) {
+					chosenChoice = chosenChoice || x.action.choice
+				}
+			})
+			choice = chosenChoice || chances[0].action.choice
+		})
+		return choice?.actionSequence || [{ kind: "Random" }]
+	}
+
+	resolveAIActions(combatant: Combatant) {
+		if (!combatant.ai) {
+			throw new Error("Cannot resolve AI actions for a combatant with no AI!")
+		}
+		if (!combatant.currentActionSequence) {
+			combatant.currentActionSequence = this.chooseAIAction(combatant.ai);
+		}
+
 	}
 
 	//Checks if skill can be used

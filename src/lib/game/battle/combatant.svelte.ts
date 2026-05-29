@@ -15,6 +15,7 @@ import { randomOutcome, withinBounds } from '../calculationUtils';
 import { hasSkills } from '../type_guards';
 import type { CompendiumPassiveSkill } from '../compendium/skill';
 import _ from 'underscore';
+import type { AIAction, CombatAI } from '../ai/aiScriptAST';
 
 export class Combatant {
 	character: Character;
@@ -27,10 +28,12 @@ export class Combatant {
 	tetrakarn = $state(false);
 	makarakarn = $state(false);
 	hasQuickCleanse = false;
-	ai: AI;
-	constructor(character: Character, side: Side) {
+	ai: CombatAI | null;
+	currentActionSequence: AIAction[] | null = $state(null);
+	constructor(character: Character, side: Side, ai: CombatAI | null) {
 		this.character = $state(character);
 		this.side = side;
+		this.ai = ai;
 		if (hasSkills(character.characterClass.data)) {
 			character.characterClass.data.skills
 				.filter((s) => s.kind == 'Passive')

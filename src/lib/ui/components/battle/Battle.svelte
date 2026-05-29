@@ -35,16 +35,20 @@
 		</div>
 	</div>
 	<div>
-		<ControlBar
-			onSkillUse={(skill, target) => {
-				const targets = battle.resolveTargets(skill.skill.targeting, target);
-				battle.resolveSkill(battle.currentCombatant, skill, targets);
-				selectedTarget = null;
-			}}
-			currentCombatant={battle.currentCombatant}
-			{selectedTarget}
-			clearSelection={() => (selectedTarget = null)}
-		></ControlBar>
+		{#if battle.currentCombatant.ai}
+			<button>Continue</button>
+		{:else}
+			<ControlBar
+				onSkillUse={(skill, target) => {
+					const targets = battle.resolveTargets(skill.skill.targeting, target);
+					battle.resolveSkill(battle.currentCombatant, skill, targets);
+					selectedTarget = null;
+				}}
+				currentCombatant={battle.currentCombatant}
+				{selectedTarget}
+				clearSelection={() => (selectedTarget = null)}
+			></ControlBar>
+		{/if}
 	</div>
 	<!-- bottom -->
 </div>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { DEBUG_AI } from '$lib/game/ai/debug';
 	import { Combatant } from '$lib/game/battle/combatant.svelte';
 	import { BattleState } from '$lib/game/battle/index.svelte';
 	import { Party } from '$lib/game/battle/party.svelte';
@@ -19,16 +20,16 @@
 	enemyJohnDemon3.displayName = 'enemyJohnDemon3';
 	let playerParty = $state(
 		new Party([
-			new Combatant(friendlyJohnDemon, 'Player'),
-			new Combatant(friendlyJohnDemon2, 'Player'),
-			new Combatant(friendlyJohnDemon3, 'Player')
+			new Combatant(friendlyJohnDemon, 'Player', null),
+			new Combatant(friendlyJohnDemon2, 'Player', null),
+			new Combatant(friendlyJohnDemon3, 'Player', null)
 		])
 	);
 	let enemyParty = $state(
 		new Party([
-			new Combatant(enemyJohnDemon, 'Enemy'),
-			new Combatant(enemyJohnDemon2, 'Enemy'),
-			new Combatant(enemyJohnDemon3, 'Enemy')
+			new Combatant(enemyJohnDemon, 'Enemy', DEBUG_AI),
+			new Combatant(enemyJohnDemon2, 'Enemy', DEBUG_AI),
+			new Combatant(enemyJohnDemon3, 'Enemy', DEBUG_AI)
 		])
 	);
 	let battle = $state(new BattleState(playerParty, enemyParty));
